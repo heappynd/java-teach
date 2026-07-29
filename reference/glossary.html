@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Java 后端术语表 - 前端开发者版</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<h1>Java 后端术语表</h1>
+<p class="lesson-meta">参考文档 | 前端开发者专属版 | 持续更新</p>
+
+<blockquote>
+  <p>本文档将 Java 后端核心术语映射到你已熟悉的前端概念。每次新课遇到陌生术语，都可以回来查阅。</p>
+</blockquote>
+
+<h2>基础概念</h2>
+
+<table>
+  <tr>
+    <th>术语</th>
+    <th>前端类比</th>
+    <th>说明</th>
+  </tr>
+  <tr>
+    <td><strong>JDK</strong><br>Java Development Kit</td>
+    <td>Node.js 运行时</td>
+    <td>Java 开发工具包，包含编译器（javac）和运行时（JRE）。没有 JDK 就无法编译和运行 Java 代码，就像没有 Node.js 就不能运行 JS。</td>
+  </tr>
+  <tr>
+    <td><strong>JRE</strong><br>Java Runtime Environment</td>
+    <td>浏览器 V8 引擎</td>
+    <td>Java 运行环境。JDK 包含 JRE。</td>
+  </tr>
+  <tr>
+    <td><strong>JVM</strong><br>Java Virtual Machine</td>
+    <td>V8 引擎</td>
+    <td>Java 虚拟机，负责执行 Java 字节码。一次编写，到处运行靠的就是 JVM。</td>
+  </tr>
+  <tr>
+    <td><strong>OpenJDK</strong></td>
+    <td>开源版 Node.js</td>
+    <td>Java SE 的开源实现。Adoptium Temurin、Amazon Corretto 等都是基于 OpenJDK 的发行版。</td>
+  </tr>
+</table>
+
+<h2>构建与依赖管理</h2>
+
+<table>
+  <tr>
+    <th>术语</th>
+    <th>前端类比</th>
+    <th>说明</th>
+  </tr>
+  <tr>
+    <td><strong>Maven</strong></td>
+    <td>npm / yarn</td>
+    <td>Java 的项目管理和构建工具。管理依赖、编译、打包、测试，相当于 npm + Vite 的组合体。</td>
+  </tr>
+  <tr>
+    <td><strong>Gradle</strong></td>
+    <td>pnpm / Vite</td>
+    <td>另一种构建工具，更灵活更快，但学习曲线更陡。Spring Initializr 默认提供 Maven 和 Gradle 两个选项。</td>
+  </tr>
+  <tr>
+    <td><strong>pom.xml</strong></td>
+    <td>package.json</td>
+    <td>Maven 的项目配置文件，声明项目信息和依赖。POM = Project Object Model。</td>
+  </tr>
+  <tr>
+    <td><strong>GroupId / ArtifactId / Version</strong></td>
+    <td>@scope/package-name@version</td>
+    <td>Maven 坐标（GAV），唯一标识一个依赖包。如 <code>org.springframework.boot:spring-boot-starter-web:3.2.0</code>。</td>
+  </tr>
+  <tr>
+    <td><strong>Maven Repository</strong></td>
+    <td>npm registry (npmjs.com)</td>
+    <td>存放 Java 包的仓库。<a href="https://mvnrepository.com/">Maven Central</a> 是公共仓库，相当于 npmjs.com。</td>
+  </tr>
+  <tr>
+    <td><strong>~/.m2/repository</strong></td>
+    <td>node_modules</td>
+    <td>Maven 的本地依赖缓存目录。所有下载的依赖都存在这里，被多个项目共享（不像 node_modules 每个项目单独存一份）。</td>
+  </tr>
+  <tr>
+    <td><strong>Dependency</strong></td>
+    <td>npm package</td>
+    <td>项目依赖的第三方库。在 pom.xml 的 &lt;dependencies&gt; 中声明。</td>
+  </tr>
+  <tr>
+    <td><strong>Starter</strong></td>
+    <td>预设的依赖集合（如 Nuxt preset）</td>
+    <td>Spring Boot 的依赖打包方案。如 <code>spring-boot-starter-web</code> 一次引入 Web 开发需要的所有依赖。</td>
+  </tr>
+</table>
+
+<h2>Spring Boot 核心概念</h2>
+
+<table>
+  <tr>
+    <th>术语</th>
+    <th>前端类比</th>
+    <th>说明</th>
+  </tr>
+  <tr>
+    <td><strong>Spring Boot</strong></td>
+    <td>Nuxt.js / Next.js</td>
+    <td>Spring 框架的快速开发方案，自动配置、内嵌服务器，开箱即用。就像 Nuxt 对 Vue 的意义。</td>
+  </tr>
+  <tr>
+    <td><strong>Spring Framework</strong></td>
+    <td>Vue.js 核心</td>
+    <td>Spring Boot 的底层框架。Spring Boot 简化了 Spring 的配置，就像 Nuxt 简化了 Vue 的工程化。</td>
+  </tr>
+  <tr>
+    <td><strong>@SpringBootApplication</strong></td>
+    <td>createApp().mount()</td>
+    <td>Spring Boot 应用入口注解，标记主启动类。等同于 Vue 应用的启动点。</td>
+  </tr>
+  <tr>
+    <td><strong>Bean</strong></td>
+    <td>Vue 中的组件实例</td>
+    <td>由 Spring 容器管理的对象。Spring 帮你创建和管理这些对象，你需要时直接注入使用。</td>
+  </tr>
+  <tr>
+    <td><strong>IoC / DI</strong><br>控制反转 / 依赖注入</td>
+    <td>Vue 的 provide/inject</td>
+    <td>Spring 核心思想。对象由容器创建和注入，而不是手动 new。类似于 Vue 的依赖注入机制。</td>
+  </tr>
+  <tr>
+    <td><strong>Auto-configuration</strong></td>
+    <td>Nuxt 的自动导入</td>
+    <td>Spring Boot 根据依赖自动配置 Bean。你引入了 web starter，它就自动配置好 Tomcat 服务器。</td>
+  </tr>
+</table>
+
+<h2>Web 层（API 开发）</h2>
+
+<table>
+  <tr>
+    <th>术语</th>
+    <th>前端类比</th>
+    <th>说明</th>
+  </tr>
+  <tr>
+    <td><strong>@RestController</strong></td>
+    <td>Express Router / Koa Controller</td>
+    <td>标记一个类为 REST API 控制器，自动将返回值转为 JSON。</td>
+  </tr>
+  <tr>
+    <td><strong>@GetMapping / @PostMapping</strong></td>
+    <td>app.get() / app.post()</td>
+    <td>定义 HTTP 路由。<code>@GetMapping("/users")</code> 相当于 <code>app.get('/users', handler)</code>。</td>
+  </tr>
+  <tr>
+    <td><strong>@RequestMapping</strong></td>
+    <td>Vue Router routes 定义</td>
+    <td>通用的路由映射注解，可指定 method。也是类级别的路由前缀。</td>
+  </tr>
+  <tr>
+    <td><strong>@RequestParam</strong></td>
+    <td>req.query.name</td>
+    <td>获取 URL 查询参数。如 <code>?name=Amy</code> 中的 name。</td>
+  </tr>
+  <tr>
+    <td><strong>@PathVariable</strong></td>
+    <td>Vue Router 的 /users/:id</td>
+    <td>获取 URL 路径参数。如 <code>/users/42</code> 中的 42。</td>
+  </tr>
+  <tr>
+    <td><strong>@RequestBody</strong></td>
+    <td>req.body</td>
+    <td>获取 POST/PUT 请求体的 JSON 数据。</td>
+  </tr>
+  <tr>
+    <td><strong>DTO</strong><br>Data Transfer Object</td>
+    <td>TypeScript Interface</td>
+    <td>数据传输对象，用于定义 API 请求/响应的数据结构。类似 TS 的 interface。</td>
+  </tr>
+  <tr>
+    <td><strong>Tomcat</strong></td>
+    <td>Vite dev server</td>
+    <td>Web 服务器。Spring Boot 内嵌了 Tomcat，不需要单独安装，直接运行即可。</td>
+  </tr>
+</table>
+
+<h2>数据层</h2>
+
+<table>
+  <tr>
+    <th>术语</th>
+    <th>前端类比</th>
+    <th>说明</th>
+  </tr>
+  <tr>
+    <td><strong>JPA</strong><br>Java Persistence API</td>
+    <td>ORM（如 Prisma）</td>
+    <td>Java 的 ORM 标准。将 Java 对象映射到数据库表，类似 Prisma 对 TS 的意义。</td>
+  </tr>
+  <tr>
+    <td><strong>Spring Data JPA</strong></td>
+    <td>Prisma + 自动 CRUD</td>
+    <td>Spring 对 JPA 的封装，只需定义接口就能自动生成 CRUD 操作。</td>
+  </tr>
+  <tr>
+    <td><strong>Entity</strong></td>
+    <td>Prisma Model</td>
+    <td>映射到数据库表的 Java 类。一个 Entity 类 = 一张数据库表。</td>
+  </tr>
+  <tr>
+    <td><strong>Repository</strong></td>
+    <td>数据访问层</td>
+    <td>提供数据库操作接口。Spring Data JPA 会自动实现它。</td>
+  </tr>
+  <tr>
+    <td><strong>Hibernate</strong></td>
+    <td>Prisma 的底层引擎</td>
+    <td>JPA 的主流实现框架。Spring Data JPA 底层使用的就是 Hibernate。</td>
+  </tr>
+</table>
+
+<h2>项目结构</h2>
+
+<table>
+  <tr>
+    <th>术语</th>
+    <th>前端类比</th>
+    <th>说明</th>
+  </tr>
+  <tr>
+    <td><strong>src/main/java</strong></td>
+    <td>src/</td>
+    <td>存放 Java 源代码。</td>
+  </tr>
+  <tr>
+    <td><strong>src/main/resources</strong></td>
+    <td>public/ 或 assets/</td>
+    <td>存放配置文件和静态资源。</td>
+  </tr>
+  <tr>
+    <td><strong>application.properties</strong></td>
+    <td>.env</td>
+    <td>Spring Boot 配置文件。配置端口、数据库连接等。也可用 .yml 格式。</td>
+  </tr>
+  <tr>
+    <td><strong>src/test/java</strong></td>
+    <td>tests/ 或 __tests__/</td>
+    <td>存放测试代码。</td>
+  </tr>
+  <tr>
+    <td><strong>target/</strong></td>
+    <td>dist/</td>
+    <td>编译输出目录。Maven 编译后的 .class 文件和打包的 .jar 都在这里。</td>
+  </tr>
+  <tr>
+    <td><strong>Package</strong></td>
+    <td>文件夹 / 命名空间</td>
+    <td>Java 的代码组织单位，对应文件系统的目录。如 <code>com.example.demo</code> 对应 <code>com/example/demo/</code> 目录。</td>
+  </tr>
+</table>
+
+<h2>常用 Maven 命令</h2>
+
+<table>
+  <tr>
+    <th>命令</th>
+    <th>前端类比</th>
+    <th>说明</th>
+  </tr>
+  <tr>
+    <td><code>mvn clean</code></td>
+    <td>rm -rf dist/</td>
+    <td>清理 target 目录。</td>
+  </tr>
+  <tr>
+    <td><code>mvn compile</code></td>
+    <td>tsc / vite build</td>
+    <td>编译源代码。</td>
+  </tr>
+  <tr>
+    <td><code>mvn test</code></td>
+    <td>npm test</td>
+    <td>运行测试。</td>
+  </tr>
+  <tr>
+    <td><code>mvn package</code></td>
+    <td>npm run build</td>
+    <td>打包成 .jar 文件。</td>
+  </tr>
+  <tr>
+    <td><code>mvn spring-boot:run</code></td>
+    <td>npm run dev</td>
+    <td>启动 Spring Boot 应用（开发模式）。</td>
+  </tr>
+  <tr>
+    <td><code>mvn install</code></td>
+    <td>npm link</td>
+    <td>打包并安装到本地 Maven 仓库。</td>
+  </tr>
+</table>
+
+<div class="footer">
+  <p><a href="../lessons/0001-install-jdk-on-windows.html">第一课：安装 JDK</a> | <a href="../RESOURCES.md">资源列表</a> | <a href="../MISSION.md">学习使命</a></p>
+</div>
+
+</body>
+</html>

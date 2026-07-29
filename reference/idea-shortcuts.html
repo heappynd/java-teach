@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IDEA 快捷键速查表 - Java 后端学习</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<h1>IntelliJ IDEA 快捷键速查表</h1>
+<p class="lesson-meta">参考文档 | Windows/Linux 版 | 持续更新</p>
+
+<blockquote>
+  <p>从 VS Code 转到 IDEA？这些快捷键是你最高频使用的。建议打印出来贴在屏幕旁边。</p>
+</blockquote>
+
+<h2>万能键</h2>
+
+<table>
+  <tr>
+    <th>快捷键</th>
+    <th>作用</th>
+    <th>VS Code 对应</th>
+  </tr>
+  <tr>
+    <td><code>Alt + Enter</code></td>
+    <td>万能修复：自动导入、修复错误、生成代码</td>
+    <td><code>Ctrl + .</code>（Quick Fix）</td>
+  </tr>
+</table>
+
+<div class="callout callout-tip">
+  <p class="callout-title">最高频操作</p>
+  <p>代码有红线？按 <code>Alt + Enter</code>。缺 import？按 <code>Alt + Enter</code>。不知道怎么写？按 <code>Alt + Enter</code>。这一个键解决了 80% 的问题。</p>
+</div>
+
+<h2>代码补全</h2>
+
+<table>
+  <tr>
+    <th>快捷键</th>
+    <th>作用</th>
+    <th>VS Code 对应</th>
+  </tr>
+  <tr>
+    <td><code>Ctrl + 空格</code></td>
+    <td>基础补全：输入 <code>@Get</code> 补全 <code>@GetMapping</code></td>
+    <td>自动弹出</td>
+  </tr>
+  <tr>
+    <td><code>Ctrl + Shift + 空格</code></td>
+    <td>智能补全：根据上下文推荐，更精准</td>
+    <td>无直接对应</td>
+  </tr>
+  <tr>
+    <td><code>Tab</code></td>
+    <td>确认补全（替换光标后的内容）</td>
+    <td><code>Tab</code></td>
+  </tr>
+  <tr>
+    <td><code>Enter</code></td>
+    <td>确认补全（不替换，插入）</td>
+    <td><code>Enter</code></td>
+  </tr>
+</table>
+
+<h2>Live Templates（代码模板）</h2>
+
+<p>输入缩写 + Tab，自动展开成完整代码。这是 IDEA 最省时间的功能。</p>
+
+<table>
+  <tr>
+    <th>缩写</th>
+    <th>展开结果</th>
+    <th>前端类比</th>
+  </tr>
+  <tr>
+    <td><code>sout</code></td>
+    <td><code>System.out.println();</code></td>
+    <td>类似 <code>clg</code> -> <code>console.log()</code></td>
+  </tr>
+  <tr>
+    <td><code>psvm</code></td>
+    <td><code>public static void main(String[] args) {}</code></td>
+    <td>-</td>
+  </tr>
+  <tr>
+    <td><code>fori</code></td>
+    <td><code>for (int i = 0; i < ; i++) {}</code></td>
+    <td>-</td>
+  </tr>
+  <tr>
+    <td><code>iter</code></td>
+    <td><code>for (var item : list) {}</code>（增强 for 循环）</td>
+    <td>类似 <code>foreach</code></td>
+  </tr>
+  <tr>
+    <td><code>ifn</code></td>
+    <td><code>if (var == null) {}</code></td>
+    <td>-</td>
+  </tr>
+  <tr>
+    <td><code>inn</code></td>
+    <td><code>if (var != null) {}</code></td>
+    <td>-</td>
+  </tr>
+</table>
+
+<h2>代码生成</h2>
+
+<table>
+  <tr>
+    <th>快捷键</th>
+    <th>作用</th>
+    <th>VS Code 对应</th>
+  </tr>
+  <tr>
+    <td><code>Alt + Insert</code></td>
+    <td>生成：构造器、getter/setter、toString、equals 等</td>
+    <td>需装插件</td>
+  </tr>
+  <tr>
+    <td><code>Ctrl + Alt + T</code></td>
+    <td>用 if/try/for 等包裹选中代码</td>
+    <td>-</td>
+  </tr>
+  <tr>
+    <td><code>Ctrl + D</code></td>
+    <td>复制当前行到下一行</td>
+    <td><code>Shift + Alt + ↓</code></td>
+  </tr>
+  <tr>
+    <td><code>Ctrl + Y</code></td>
+    <td>删除当前行</td>
+    <td><code>Ctrl + Shift + K</code></td>
+  </tr>
+</table>
+
+<h2>导航与查找</h2>
+
+<table>
+  <tr>
+    <th>快捷键</th>
+    <th>作用</th>
+    <th>VS Code 对应</th>
+  </tr>
+  <tr>
+    <td><code>Ctrl + N</code></td>
+    <td>按类名搜索文件</td>
+    <td><code>Ctrl + P</code></td>
+  </tr>
+  <tr>
+    <td><code>Ctrl + Shift + F</code></td>
+    <td>全局搜索（跨文件）</td>
+    <td><code>Ctrl + Shift + F</code></td>
+  </tr>
+  <tr>
+    <td><code>Ctrl + B</code></td>
+    <td>跳转到定义（按住 Ctrl 点也行）</td>
+    <td><code>F12</code> / Ctrl+Click</td>
+  </tr>
+  <tr>
+    <td><code>Ctrl + Alt + B</code></td>
+    <td>跳转到接口的实现</td>
+    <td>-</td>
+  </tr>
+  <tr>
+    <td><code>Alt + ←</code> / <code>Alt + →</code></td>
+    <td>切换标签页</td>
+    <td>相同</td>
+  </tr>
+  <tr>
+    <td><code>Ctrl + E</code></td>
+    <td>最近打开的文件列表</td>
+    <td><code>Ctrl + Tab</code></td>
+  </tr>
+  <tr>
+    <td><code>Shift Shift</code></td>
+    <td>Search Everywhere（搜一切）</td>
+    <td><code>Ctrl + Shift + P</code></td>
+  </tr>
+</table>
+
+<h2>代码格式化</h2>
+
+<table>
+  <tr>
+    <th>快捷键</th>
+    <th>作用</th>
+    <th>VS Code 对应</th>
+  </tr>
+  <tr>
+    <td><code>Ctrl + Alt + L</code></td>
+    <td>格式化代码（相当于 Prettier）</td>
+    <td><code>Shift + Alt + F</code></td>
+  </tr>
+  <tr>
+    <td><code>Ctrl + Alt + O</code></td>
+    <td>清理无用 import</td>
+    <td>需装插件</td>
+  </tr>
+  <tr>
+    <td><code>Ctrl + Alt + I</code></td>
+    <td>自动缩进</td>
+    <td>-</td>
+  </tr>
+</table>
+
+<h2>运行与调试</h2>
+
+<table>
+  <tr>
+    <th>快捷键</th>
+    <th>作用</th>
+    <th>VS Code 对应</th>
+  </tr>
+  <tr>
+    <td><code>Shift + F10</code></td>
+    <td>运行当前程序</td>
+    <td><code>F5</code></td>
+  </tr>
+  <tr>
+    <td><code>Shift + F9</code></td>
+    <td>调试运行（Debug 模式）</td>
+    <td><code>F5</code>（选 Debug）</td>
+  </tr>
+  <tr>
+    <td><code>F8</code></td>
+    <td>单步执行（不进入方法）</td>
+    <td><code>F10</code></td>
+  </tr>
+  <tr>
+    <td><code>F7</code></td>
+    <td>单步执行（进入方法）</td>
+    <td><code>F11</code></td>
+  </tr>
+  <tr>
+    <td><code>F9</code></td>
+    <td>继续运行到下一个断点</td>
+    <td><code>F5</code></td>
+  </tr>
+  <tr>
+    <td><code>Ctrl + F8</code></td>
+    <td>切换断点</td>
+    <td><code>F9</code></td>
+  </tr>
+</table>
+
+<h2>重构</h2>
+
+<table>
+  <tr>
+    <th>快捷键</th>
+    <th>作用</th>
+    <th>VS Code 对应</th>
+  </tr>
+  <tr>
+    <td><code>Shift + F6</code></td>
+    <td>重命名（变量、方法、类）</td>
+    <td><code>F2</code></td>
+  </tr>
+  <tr>
+    <td><code>Ctrl + Alt + V</code></td>
+    <td>提取变量：把表达式结果赋给新变量</td>
+    <td>-</td>
+  </tr>
+  <tr>
+    <td><code>Ctrl + Alt + M</code></td>
+    <td>提取方法：把选中代码封装成方法</td>
+    <td>-</td>
+  </tr>
+</table>
+
+<h2>最实用的 5 个快捷键（先记这些）</h2>
+
+<ol>
+  <li><code>Alt + Enter</code> - 万能修复，有红线就按它</li>
+  <li><code>sout</code> + Tab - 快速打印</li>
+  <li><code>Shift Shift</code> - 搜一切</li>
+  <li><code>Ctrl + B</code> - 跳转到定义</li>
+  <li><code>Shift + F10</code> - 运行程序</li>
+</ol>
+
+<div class="footer">
+  <p><a href="../lessons/0004-first-rest-api.html">返回第四课：编写第一个 REST API</a> | <a href="../reference/glossary.html">术语表</a></p>
+</div>
+
+</body>
+</html>

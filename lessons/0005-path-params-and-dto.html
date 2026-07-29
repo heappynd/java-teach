@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>第 5 课：路径参数与 DTO - Java 后端学习</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<h1>第 5 课：路径参数与 DTO</h1>
+<p class="lesson-meta">预计用时：30 分钟 | 难度：进阶 | 前置知识：<a href="0004-first-rest-api.html">第 4 课 REST API</a></p>
+
+<h2>目标：写一个用户管理 API</h2>
+
+<p>上一课你学会了查询参数（<code>?name=Vue</code>）和请求体（<code>@RequestBody</code>）。这节课我们要写更贴近真实的 API：</p>
+<ol>
+  <li><strong>路径参数</strong>：<code>/users/42</code> 获取 ID 为 42 的用户</li>
+  <li><strong>DTO</strong>：用结构化对象返回数据，而不是裸 Map</li>
+  <li><strong>内存 CRUD</strong>：用 List 存数据，实现增删改查</li>
+</ol>
+
+<p>完成后你就有了一个完整的用户管理 API -- 离接数据库只差一步。</p>
+
+<h2>路径参数 @PathVariable</h2>
+
+<p>前端路由你一定见过 <code>/users/:id</code>，Spring Boot 里也一样：</p>
+
+<div class="compare-grid">
+  <div class="compare-card frontend">
+    <h4>Vue Router</h4>
+    <pre><code>// 路由定义
+{ path: '/users/:id', component: UserDetail }
+
+// 获取参数
+const id = route.params.id  // "42"</code></pre>
+  </div>
+  <div class="compare-card backend">
+    <h4>Spring Boot</h4>
+    <pre><code>// 路由定义
+@GetMapping("/users/{id}")
+
+// 获取参数
+public String getUser(
+    @PathVariable Long id) {  // 42
+}</code></pre>
+  </div>
+</div>
+
+<table>
+  <tr>
+    <th>概念</th>
+    <th>查询参数 @RequestParam</th>
+    <th>路径参数 @PathVariable</th>
+  </tr>
+  <tr>
+    <td>URL 格式</td>
+    <td><code>/users?name=Vue</code></td>
+    <td><code>/users/42</code></td>
+  </tr>
+  <tr>
+    <td>前端类比</td>
+    <td><code>req.query.name</code></td>
+    <td><code>route.params.id</code></td>
+  </tr>
+  <tr>
+    <td>什么时候用</td>
+    <td>过滤、搜索条件</td>
+    <td>定位某个具体资源</td>
+  </tr>
+</table>
+
+<h2>DTO：用结构化对象代替 Map</h2>
+
+<p>上一课我们用 <code>Map.of()</code> 返回数据，能跑但有问题：</p>
+<ul>
+  <li>没有类型提示，IDE 不知道有哪些字段</li>
+  <li>字段名打错了不会报错</li>
+  <li>没法做数据验证</li>
+</ul>
+
+<p>就像前端用 <code>any</code> 类型 vs 用 <code>interface</code> 的区别。Java 中用 <strong>Record</strong> 定义 DTO：</p>
+
+<div class="compare-grid">
+  <div class="compare-card frontend">
+    <h4>TypeScript（你熟悉的）</h4>
+    <pre><code>// 定义接口
+interface User {
+  id: number
+  name: string
+  email: string
+}
+
+// 使用
+const user: User = {
+  id: 1,
+  name: "Vue",
+  email: "vue@dev.com"
+}</code></pre>
+  </div>
+  <div class="compare-card backend">
+    <h4>Java Record（今天学的）</h4>
+    <pre><code>// 定义 Record
+public record User(
+    Long id,
+    String name,
+    String email
+) {}
+
+// 使用
+User user = new User(
+    1L,
+    "Vue",
+    "vue@dev.com"
+);</code></pre>
+  </div>
+</div>
+
+<blockquote>
+  <p><strong>Record</strong> 是 Java 14+ 引入的语法，专门用来定义数据类。它自动生成构造器、getter、equals、toString。你只需声明字段，其余的 Java 帮你搞定。对前端开发者来说，它就是 TypeScript 的 <code>interface</code> + 构造函数的合体。</p>
+</blockquote>
+
+<h3>Record 关键差异</h3>
+
+<table>
+  <tr>
+    <th>特性</th>
+    <th>TypeScript interface</th>
+    <th>Java Record</th>
+  </tr>
+  <tr>
+    <td>定义字段</td>
+    <td><code>id: number</code></td>
+    <td><code>Long id</code>（类型在前）</td>
+  </tr>
+  <tr>
+    <td>创建实例</td>
+    <td><code>{ id: 1, name: "Vue" }</code></td>
+    <td><code>new User(1L, "Vue")</code></td>
+  </tr>
+  <tr>
+    <td>读取字段</td>
+    <td><code>user.name</code></td>
+    <td><code>user.name()</code>（带括号！）</td>
+  </tr>
+  <tr>
+    <td>数字类型</td>
+    <td><code>number</code>（统一）</td>
+    <td><code>Long</code>（整数）/ <code>Double</code>（小数）</td>
+  </tr>
+  <tr>
+    <td>整数字面量</td>
+    <td><code>1</code></td>
+    <td><code>1L</code>（L 表示 Long 类型）</td>
+  </tr>
+</table>
+
+<div class="callout callout-warn">
+  <p class="callout-title">注意：getter 带括号</p>
+  <p>Java Record 的字段访问是方法调用：<code>user.name()</code> 不是 <code>user.name</code>。这是因为 Java 没有属性访问器语法，getter 方法名就是字段名。按 <code>Alt + Enter</code> 会自动帮你加括号。</p>
+</div>
+
+<h2>实战：用户管理 API</h2>
+
+<div class="steps-container">
+
+<div class="step">
+  <h3>创建 User Record</h3>
+  <p>在 <code>com.yourname.demo</code> 包下新建 <code>User.java</code>：</p>
+  <pre><code>package com.yourname.demo;
+
+public record User(
+    Long id,
+    String name,
+    String email
+) {}</code></pre>
+  <p>就这么简单，一个 User DTO 定义完了。等同于 TypeScript 的：</p>
+  <pre><code>interface User {
+  id: number
+  name: string
+  email: string
+}</code></pre>
+</div>
+
+<div class="step">
+  <h3>创建 UserController</h3>
+  <p>新建 <code>UserController.java</code>，先用内存 List 存数据：</p>
+  <pre><code>package com.yourname.demo;
+
+import org.springframework.web.bind.annotation.*;
+
+import java.util.ArrayList;
+import java.util.List;
+
+@RestController
+@RequestMapping("/users")
+public class UserController {
+
+    // 内存存储，暂代数据库（下节课换真数据库）
+    private List&lt;User&gt; users = new ArrayList&lt;&gt;(List.of(
+        new User(1L, "Vue", "vue@dev.com"),
+        new User(2L, "React", "react@dev.com"),
+        new User(3L, "Angular", "angular@dev.com")
+    ));
+
+    // GET /users - 获取所有用户
+    @GetMapping
+    public List&lt;User&gt; getAll() {
+        return users;
+    }
+
+    // GET /users/1 - 获取单个用户
+    @GetMapping("/{id}")
+    public User getById(@PathVariable Long id) {
+        return users.stream()
+            .filter(u -> u.id().equals(id))
+            .findFirst()
+            .orElse(null);
+    }
+
+    // POST /users - 创建用户
+    @PostMapping
+    public User create(@RequestBody User user) {
+        users.add(user);
+        return user;
+    }
+
+    // DELETE /users/1 - 删除用户
+    @DeleteMapping("/{id}")
+    public String delete(@PathVariable Long id) {
+        users.removeIf(u -> u.id().equals(id));
+        return "Deleted user " + id;
+    }
+}</code></pre>
+</div>
+
+<div class="step">
+  <h3>理解新概念</h3>
+
+  <p><strong>类级别路由 <code>@RequestMapping("/users")</code></strong></p>
+  <p>给整个 Controller 加路径前缀。方法上的 <code>@GetMapping("/{id}")</code> 实际路径是 <code>/users/{id}</code>。相当于 Vue Router 的嵌套路由。</p>
+
+  <p><strong><code>List&lt;User&gt;</code></strong></p>
+  <p>相当于 TypeScript 的 <code>User[]</code>。<code>ArrayList</code> 是可变 List（类似 JS 的普通数组），<code>List.of(...)</code> 创建不可变 List。</p>
+
+  <p><strong><code>users.stream().filter(...).findFirst().orElse(null)</code></strong></p>
+  <p>这是 Java 的流式 API，相当于 JS 的：</p>
+  <pre><code>// JS 等价写法
+users.find(u => u.id === id) || null</code></pre>
+  <table>
+    <tr>
+      <th>Java Stream</th>
+      <th>JS Array</th>
+    </tr>
+    <tr>
+      <td><code>users.stream()</code></td>
+      <td><code>users</code>（数组本身就是可迭代的）</td>
+    </tr>
+    <tr>
+      <td><code>.filter(u -> u.id().equals(id))</code></td>
+      <td><code>.filter(u => u.id === id)</code></td>
+    </tr>
+    <tr>
+      <td><code>.findFirst()</code></td>
+      <td>（filter 返回的数组取第一个）</td>
+    </tr>
+    <tr>
+      <td><code>.orElse(null)</code></td>
+      <td><code>|| null</code></td>
+    </tr>
+    <tr>
+      <td><code>u -> u.id().equals(id)</code></td>
+      <td><code>u => u.id === id</code></td>
+    </tr>
+  </table>
+  <div class="callout callout-info">
+    <p class="callout-title">为什么用 equals() 不用 ==？</p>
+    <p>Java 中 <code>==</code> 比较的是引用（内存地址），<code>equals()</code> 比较的是值。对于 <code>Long</code>、<code>String</code> 等对象类型，必须用 <code>equals()</code>。这和 JS 不同 -- JS 的 <code>===</code> 对基本类型比较值。Java 中基本类型（int, long）用 <code>==</code>，包装类型（Integer, Long）用 <code>equals()</code>。</p>
+  </div>
+</div>
+
+<div class="step">
+  <h3>运行并测试</h3>
+  <p>运行项目，用浏览器或 IDEA HTTP Client 测试：</p>
+
+  <p><strong>获取所有用户</strong></p>
+  <div class="terminal">
+<span class="prompt">GET</span> http://localhost:8080/users<br><br>
+<span class="output">[{"id":1,"name":"Vue","email":"vue@dev.com"},{"id":2,"name":"React","email":"react@dev.com"},{"id":3,"name":"Angular","email":"angular@dev.com"}]</span>
+  </div>
+
+  <p><strong>获取单个用户</strong></p>
+  <div class="terminal">
+<span class="prompt">GET</span> http://localhost:8080/users/2<br><br>
+<span class="output">{"id":2,"name":"React","email":"react@dev.com"}</span>
+  </div>
+
+  <p><strong>创建用户</strong>（用 IDEA HTTP Client 或浏览器控制台 fetch）</p>
+  <div class="terminal">
+<span class="prompt">POST</span> http://localhost:8080/users<br>
+Content-Type: application/json<br><br>
+{"id":4,"name":"Svelte","email":"svelte@dev.com"}<br><br>
+<span class="output">{"id":4,"name":"Svelte","email":"svelte@dev.com"}</span>
+  </div>
+
+  <p><strong>删除用户</strong></p>
+  <div class="terminal">
+<span class="prompt">DELETE</span> http://localhost:8080/users/1<br><br>
+<span class="output">Deleted user 1</span>
+  </div>
+</div>
+
+</div>
+
+<h2>API 路由总览</h2>
+
+<table>
+  <tr>
+    <th>HTTP 方法</th>
+    <th>路径</th>
+    <th>注解</th>
+    <th>作用</th>
+  </tr>
+  <tr>
+    <td>GET</td>
+    <td>/users</td>
+    <td><code>@GetMapping</code></td>
+    <td>获取所有用户</td>
+  </tr>
+  <tr>
+    <td>GET</td>
+    <td>/users/{id}</td>
+    <td><code>@GetMapping("/{id}")</code></td>
+    <td>获取单个用户</td>
+  </tr>
+  <tr>
+    <td>POST</td>
+    <td>/users</td>
+    <td><code>@PostMapping</code></td>
+    <td>创建用户</td>
+  </tr>
+  <tr>
+    <td>DELETE</td>
+    <td>/users/{id}</td>
+    <td><code>@DeleteMapping("/{id}")</code></td>
+    <td>删除用户</td>
+  </tr>
+</table>
+
+<div class="quiz">
+  <h3>小测验</h3>
+  <p class="quiz-question">@PathVariable 和 @RequestParam 的使用场景区别？</p>
+  <ul class="quiz-options">
+    <li class="quiz-option" onclick="checkAnswer(this, false)">两者完全等价可互换使用</li>
+    <li class="quiz-option" onclick="checkAnswer(this, true)">PathVariable 定位资源 Param 过滤</li>
+    <li class="quiz-option" onclick="checkAnswer(this, false)">RequestParam 比 PathVariable 更安全</li>
+    <li class="quiz-option" onclick="checkAnswer(this, false)">PathVariable 只能用于 POST 请求</li>
+  </ul>
+  <div class="quiz-feedback" id="quiz-feedback"></div>
+</div>
+
+<div class="quiz">
+  <h3>小测验</h3>
+  <p class="quiz-question">Java Record 和 TypeScript interface 有什么共同点？</p>
+  <ul class="quiz-options">
+    <li class="quiz-option" onclick="checkAnswer2(this, false)">两者都是用来继承父类的</li>
+    <li class="quiz-option" onclick="checkAnswer2(this, true)">两者都定义数据结构字段</li>
+    <li class="quiz-option" onclick="checkAnswer2(this, false)">两者都包含业务逻辑方法</li>
+    <li class="quiz-option" onclick="checkAnswer2(this, false)">两者都运行时类型检查</li>
+  </ul>
+  <div class="quiz-feedback" id="quiz-feedback-2"></div>
+</div>
+
+<div class="quiz">
+  <h3>小测验</h3>
+  <p class="quiz-question">Java 中比较两个 Long 对象的值是否相等，应该用？</p>
+  <ul class="quiz-options">
+    <li class="quiz-option" onclick="checkAnswer3(this, false)">使用 == 运算符直接比较</li>
+    <li class="quiz-option" onclick="checkAnswer3(this, true)">使用 equals 方法比较</li>
+    <li class="quiz-option" onclick="checkAnswer3(this, false)">使用 compare 运算符比较</li>
+    <li class="quiz-option" onclick="checkAnswer3(this, false)">使用 === 运算符比较</li>
+  </ul>
+  <div class="quiz-feedback" id="quiz-feedback-3"></div>
+</div>
+
+<div class="callout callout-tip">
+  <p class="callout-title">完成本课后</p>
+  <p>你已经能写完整的 CRUD API 了！路径参数、DTO、增删改查全部掌握。目前数据存在内存里，重启就丢了。下一课我们将连接 MySQL 数据库，让数据真正持久化。遇到任何问题随时问我！</p>
+</div>
+
+<h2>推荐阅读</h2>
+<p>主资源：<a href="https://spring.io/guides/gs/rest-service" target="_blank">Building a RESTful Web Service - Spring 官方指南</a></p>
+<p>参考：<a href="../reference/glossary.html">术语表</a> | <a href="../reference/idea-shortcuts.html">IDEA 快捷键</a></p>
+
+<div class="lesson-nav">
+  <a href="0004-first-rest-api.html"><- 上一课：第一个 REST API</a>
+  <a href="0006-connect-mysql.html">下一课：连接 MySQL 数据库 -></a>
+</div>
+
+<div class="footer">
+  <p>有任何不清楚的地方？直接问我！我是你的 Java 后端老师，随时帮你解决疑问。</p>
+</div>
+
+<script>
+function checkAnswer(el, isCorrect) {
+  var options = el.parentNode.querySelectorAll('.quiz-option');
+  var feedback = document.getElementById('quiz-feedback');
+  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
+  if (isCorrect) {
+    el.classList.add('correct');
+    feedback.className = 'quiz-feedback show correct';
+    feedback.textContent = '正确！@PathVariable 用于路径中的资源标识（/users/42），@RequestParam 用于查询参数过滤（/users?name=Vue）。就像 Vue Router 的 :id vs URL query string。';
+  } else {
+    el.classList.add('incorrect');
+    feedback.className = 'quiz-feedback show incorrect';
+    feedback.textContent = '不对。两者用途不同：@PathVariable 从路径中取值（定位资源），@RequestParam 从查询字符串取值（过滤条件）。';
+  }
+}
+
+function checkAnswer2(el, isCorrect) {
+  var options = el.parentNode.querySelectorAll('.quiz-option');
+  var feedback = document.getElementById('quiz-feedback-2');
+  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
+  if (isCorrect) {
+    el.classList.add('correct');
+    feedback.className = 'quiz-feedback show correct';
+    feedback.textContent = '正确！两者都用来定义数据结构的字段列表。Record 是 Java 的数据载体，interface 是 TS 的类型约束，目的相同。';
+  } else {
+    el.classList.add('incorrect');
+    feedback.className = 'quiz-feedback show incorrect';
+    feedback.textContent = '不对。Record 和 interface 都不是用来继承的，它们定义的是数据字段结构，类似于定义一个对象的形状。';
+  }
+}
+
+function checkAnswer3(el, isCorrect) {
+  var options = el.parentNode.querySelectorAll('.quiz-option');
+  var feedback = document.getElementById('quiz-feedback-3');
+  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
+  if (isCorrect) {
+    el.classList.add('correct');
+    feedback.className = 'quiz-feedback show correct';
+    feedback.textContent = '正确！Long 是对象类型，== 比较的是引用地址不是值。必须用 equals() 比较值是否相等，这是和 JS === 最大的区别。';
+  } else {
+    el.classList.add('incorrect');
+    feedback.className = 'quiz-feedback show incorrect';
+    feedback.textContent = '不对。Java 中 == 对对象类型比较的是内存地址，不是值。Long 是对象类型，比较值必须用 equals()。JS 的 === 对基本类型比较值，但 Java 不是。';
+  }
+}
+</script>
+
+</body>
+</html>

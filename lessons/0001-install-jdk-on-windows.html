@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>第 1 课：安装 JDK - Java 后端学习</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<h1>第 1 课：在 Windows 上安装 JDK</h1>
+<p class="lesson-meta">预计用时：15 分钟 | 难度：入门 | 前置知识：无</p>
+
+<h2>为什么要装 JDK？</h2>
+
+<p>写 Vue3 需要 Node.js，写 Java 后端需要 <strong>JDK</strong>（Java Development Kit）。它是 Java 的开发工具包，包含编译器和运行时环境。</p>
+
+<div class="compare-grid">
+  <div class="compare-card frontend">
+    <h4>前端（你已熟悉）</h4>
+    <p>Node.js = JS 运行时 + npm 包管理</p>
+    <p>没有 Node.js → 不能运行 JS 代码</p>
+  </div>
+  <div class="compare-card backend">
+    <h4>后端（今天学的）</h4>
+    <p>JDK = Java 编译器 + JVM 运行时</p>
+    <p>没有 JDK → 不能编译和运行 Java 代码</p>
+  </div>
+</div>
+
+<blockquote>
+  <p>JDK 有很多发行版，就像 Node.js 也有官方版、nvm 管理版等。我们选 <strong>Eclipse Temurin</strong>（由 Adoptium 提供），它是免费开源的 OpenJDK 发行版，也是社区最主流的选择。</p>
+</blockquote>
+
+<h2>选哪个版本？</h2>
+
+<p>Java 版本号带 <strong>LTS</strong>（Long Term Support）标记的是长期支持版，相当于 Node.js 的偶数版（稳定版）。目前主流选择：</p>
+
+<table>
+  <tr>
+    <th>版本</th>
+    <th>类型</th>
+    <th>推荐场景</th>
+  </tr>
+  <tr>
+    <td>JDK 21</td>
+    <td>LTS（最新）</td>
+    <td>新项目首选，Spring Boot 4.x 完美支持</td>
+  </tr>
+  <tr>
+    <td>JDK 17</td>
+    <td>LTS</td>
+    <td>企业项目常见，Spring Boot 3.x 最低要求</td>
+  </tr>
+</table>
+
+<div class="callout callout-info">
+  <p class="callout-title">本课程使用 JDK 21</p>
+  <p>Spring Boot 最新版（4.x）支持 JDK 17 和 21。我们选 21，它是最新 LTS 版本。</p>
+</div>
+
+<h2>开始安装</h2>
+
+<div class="steps-container">
+
+<div class="step">
+  <h3>下载 JDK 安装包</h3>
+  <p>打开 <a href="https://adoptium.net/temurin/releases/" target="_blank">Adoptium 下载页面</a>，选择：</p>
+  <ul>
+    <li><strong>Version</strong>: 21 - LTS</li>
+    <li><strong>Operating System</strong>: Windows</li>
+    <li><strong>Architecture</strong>: x64（大部分 Windows 电脑选这个）</li>
+  </ul>
+  <p>在下载列表中找到 <strong>.msi</strong> 安装包（Windows Installer），点击下载。</p>
+  <div class="callout callout-tip">
+    <p class="callout-title">小贴士</p>
+    <p>如果你不知道自己的 CPU 架构，按 <code>Win + Pause</code> 打开系统信息，看"系统类型"。大部分是"x64-based processor"。</p>
+  </div>
+</div>
+
+<div class="step">
+  <h3>运行安装程序</h3>
+  <p>双击下载的 <code>.msi</code> 文件，按以下步骤操作：</p>
+  <ol>
+    <li>点击 <strong>Next</strong></li>
+    <li>接受许可协议，点击 <strong>Next</strong></li>
+    <li><strong>重要！</strong>在"Custom Setup"页面，找到 <strong>Set JAVA_HOME variable</strong> 选项，将其改为 <code>Will be installed on local hard drive</code>。这会自动设置 <code>JAVA_HOME</code> 环境变量。</li>
+    <li>同样确保 <strong>Add to PATH</strong> 选项也是 <code>Will be installed on local hard drive</code></li>
+    <li>点击 <strong>Install</strong>，等待安装完成</li>
+  </ol>
+  <div class="callout callout-warn">
+    <p class="callout-title">关键步骤</p>
+    <p>第 3、4 步最重要！如果不设置 JAVA_HOME 和 PATH，系统找不到 Java 命令。这就像装了 Node.js 但没加到 PATH，终端里输 <code>node</code> 会报"找不到命令"。</p>
+  </div>
+</div>
+
+<div class="step">
+  <h3>验证安装</h3>
+  <p>安装完成后，<strong>关闭所有已打开的终端窗口</strong>（环境变量更新需要重启终端），然后打开一个新的 PowerShell 或 CMD 窗口，输入：</p>
+  <div class="terminal">
+<span class="prompt">PS C:\&gt;</span> java -version<br>
+<span class="output">openjdk version "21.0.x" 2025-xx-xx<br>
+OpenJDK Runtime Environment Temurin-21.0.x (build 21.0.x+x)<br>
+OpenJDK Runtime Environment Temurin-21.0.x (build 21.0.x+x, mixed mode, sharing)</span>
+  </div>
+  <p>再输入：</p>
+  <div class="terminal">
+<span class="prompt">PS C:\&gt;</span> javac -version<br>
+<span class="output">javac 21.0.x</span>
+  </div>
+  <p>如果两条命令都输出了版本号（21 开头），恭喜你，JDK 安装成功！</p>
+  <ul>
+    <li><code>java</code> = 运行 Java 程序的命令（相当于 <code>node</code>）</li>
+    <li><code>javac</code> = 编译 Java 代码的命令（相当于 <code>tsc</code>）</li>
+  </ul>
+</div>
+
+<div class="step">
+  <h3>如果验证失败了怎么办？</h3>
+  <p>如果终端提示"不是内部或外部命令"或"command not found"，说明 PATH 没设置好。手动修复：</p>
+  <ol>
+    <li>按 <code>Win + S</code>，搜索"环境变量"，点击"编辑系统环境变量"</li>
+    <li>点击"环境变量"按钮</li>
+    <li>在"系统变量"中找到 <code>Path</code>，点"编辑"</li>
+    <li>点"新建"，添加 JDK 的 bin 目录路径，通常是：<br>
+      <code>C:\Program Files\Eclipse Adoptium\jdk-21.x.x-hotspot\bin</code></li>
+    <li>在"系统变量"中点"新建"，添加 <code>JAVA_HOME</code>，值为 JDK 安装目录（不含 bin）：<br>
+      <code>C:\Program Files\Eclipse Adoptium\jdk-21.x.x-hotspot</code></li>
+    <li>确定保存，重启终端，再次验证</li>
+  </ol>
+</div>
+
+</div>
+
+<h2>理解 JAVA_HOME 和 PATH</h2>
+
+<div class="compare-grid">
+  <div class="compare-card frontend">
+    <h4>前端类比</h4>
+    <p><code>PATH</code> 里加了 <code>node</code> 的路径，所以你终端里能直接输 <code>npm</code>、<code>node</code></p>
+    <p><code>NODE_PATH</code> 告诉工具去哪找 Node.js</p>
+  </div>
+  <div class="compare-card backend">
+    <h4>后端概念</h4>
+    <p><code>PATH</code> 里加了 <code>java</code> 的路径，所以终端里能直接输 <code>java</code>、<code>javac</code></p>
+    <p><code>JAVA_HOME</code> 告诉 Maven 等工具去哪找 JDK</p>
+  </div>
+</div>
+
+<div class="quiz">
+  <h3>小测验</h3>
+  <p class="quiz-question">JDK 和 Node.js 在各自生态中扮演的角色有什么共同点？</p>
+  <ul class="quiz-options">
+    <li class="quiz-option" onclick="checkAnswer(this, false)">它们都是代码编辑器，用来写代码</li>
+    <li class="quiz-option" onclick="checkAnswer(this, true)">它们都提供运行时环境，让代码能被执行</li>
+    <li class="quiz-option" onclick="checkAnswer(this, false)">它们都是包管理器，用来安装依赖</li>
+    <li class="quiz-option" onclick="checkAnswer(this, false)">它们都是框架，提供 UI 组件库</li>
+  </ul>
+  <div class="quiz-feedback" id="quiz-feedback"></div>
+</div>
+
+<div class="quiz">
+  <h3>小测验</h3>
+  <p class="quiz-question">安装 JDK 后，为什么要设置 JAVA_HOME 环境变量？</p>
+  <ul class="quiz-options">
+    <li class="quiz-option" onclick="checkAnswer2(this, false)">不设置 Java 代码无法编译</li>
+    <li class="quiz-option" onclick="checkAnswer2(this, true)">其他工具如 Maven 需要它定位 JDK</li>
+    <li class="quiz-option" onclick="checkAnswer2(this, false)">它是 Java 代码的运行目录</li>
+    <li class="quiz-option" onclick="checkAnswer2(this, false)">它存储 Java 项目的源代码</li>
+  </ul>
+  <div class="quiz-feedback" id="quiz-feedback-2"></div>
+</div>
+
+<div class="callout callout-tip">
+  <p class="callout-title">完成本课后</p>
+  <p>你已经迈出了 Java 后端的第一步！JDK 就位了，下一课我们将安装 Maven -- Java 世界的 npm。如果你在安装过程中遇到任何问题，随时问我。</p>
+</div>
+
+<h2>推荐阅读</h2>
+<p>主资源：<a href="https://adoptium.net/" target="_blank">Eclipse Adoptium 官网</a> - JDK 下载和文档</p>
+<p>参考：<a href="../reference/glossary.html">Java 后端术语表</a> - 随时查阅陌生概念</p>
+
+<div class="lesson-nav">
+  <span></span>
+  <a href="0002-install-maven-on-windows.html">下一课：安装 Maven →</a>
+</div>
+
+<div class="footer">
+  <p>有任何不清楚的地方？直接问我！我是你的 Java 后端老师，随时帮你解决疑问。</p>
+</div>
+
+<script>
+function checkAnswer(el, isCorrect) {
+  var options = el.parentNode.querySelectorAll('.quiz-option');
+  var feedback = document.getElementById('quiz-feedback');
+  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
+  if (isCorrect) {
+    el.classList.add('correct');
+    feedback.className = 'quiz-feedback show correct';
+    feedback.textContent = '正确！JDK 和 Node.js 都提供运行时环境，让代码能被编译和执行。JDK 之于 Java，正如 Node.js 之于 JavaScript。';
+  } else {
+    el.classList.add('incorrect');
+    feedback.className = 'quiz-feedback show incorrect';
+    feedback.textContent = '不对。JDK 不是编辑器、包管理器或框架，它提供的是编译器（javac）和运行时（JVM），让 Java 代码能被编译和运行，就像 Node.js 让 JS 代码能被执行。';
+  }
+}
+
+function checkAnswer2(el, isCorrect) {
+  var options = el.parentNode.querySelectorAll('.quiz-option');
+  var feedback = document.getElementById('quiz-feedback-2');
+  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
+  if (isCorrect) {
+    el.classList.add('correct');
+    feedback.className = 'quiz-feedback show correct';
+    feedback.textContent = '正确！JAVA_HOME 告诉 Maven 等构建工具 JDK 安装在哪里。Maven 需要 JDK 来编译代码，就像 Vite 需要 Node.js。';
+  } else {
+    el.classList.add('incorrect');
+    feedback.className = 'quiz-feedback show incorrect';
+    feedback.textContent = '不对。JAVA_HOME 不影响 Java 代码本身的编译，它是给 Maven 等外部工具用的，让它们能找到 JDK 的位置。';
+  }
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,390 @@
+/* ============================================
+   Java 后端学习课程 - 共享样式表
+   每节课通过 <link rel="stylesheet" href="../assets/style.css"> 引入
+   ============================================ */
+
+/* ---- 基础重置 ---- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ---- 排版 ---- */
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC",
+    "Microsoft YaHei", sans-serif;
+  font-size: 16px;
+  line-height: 1.8;
+  color: #1a1a1a;
+  background: #fafafa;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+}
+
+h1, h2, h3, h4 {
+  font-weight: 600;
+  line-height: 1.3;
+  color: #111;
+}
+
+h1 {
+  font-size: 1.9rem;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+h2 {
+  font-size: 1.45rem;
+  margin-top: 2.5rem;
+  margin-bottom: 0.8rem;
+}
+
+h3 {
+  font-size: 1.15rem;
+  margin-top: 1.8rem;
+  margin-bottom: 0.5rem;
+}
+
+p {
+  margin-bottom: 1rem;
+}
+
+a {
+  color: #2563eb;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.2s;
+}
+
+a:hover {
+  border-bottom-color: #2563eb;
+}
+
+/* ---- 代码块 ---- */
+code {
+  font-family: "JetBrains Mono", "Fira Code", "Consolas", monospace;
+  font-size: 0.875em;
+  background: #eef2f7;
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+  color: #c7254e;
+}
+
+pre {
+  background: #1e293b;
+  color: #e2e8f0;
+  padding: 1.2rem 1.5rem;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 1rem 0 1.5rem;
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+
+pre code {
+  background: none;
+  color: inherit;
+  padding: 0;
+  border-radius: 0;
+  font-size: inherit;
+}
+
+/* ---- 列表 ---- */
+ul, ol {
+  margin-bottom: 1rem;
+  padding-left: 1.5rem;
+}
+
+li {
+  margin-bottom: 0.4rem;
+}
+
+/* ---- 引用 ---- */
+blockquote {
+  border-left: 4px solid #2563eb;
+  padding: 0.5rem 1rem;
+  margin: 1.5rem 0;
+  background: #eff6ff;
+  border-radius: 0 6px 6px 0;
+  color: #1e40af;
+}
+
+blockquote p {
+  margin-bottom: 0;
+}
+
+/* ---- 表格 ---- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5rem 0;
+  font-size: 0.9rem;
+}
+
+th, td {
+  border: 1px solid #ddd;
+  padding: 0.6rem 0.9rem;
+  text-align: left;
+}
+
+th {
+  background: #f1f5f9;
+  font-weight: 600;
+}
+
+tr:nth-child(even) {
+  background: #f8fafc;
+}
+
+/* ---- 提示框 ---- */
+.callout {
+  border-radius: 8px;
+  padding: 1rem 1.2rem;
+  margin: 1.5rem 0;
+  border-left: 4px solid;
+}
+
+.callout-tip {
+  background: #f0fdf4;
+  border-color: #22c55e;
+}
+
+.callout-warn {
+  background: #fefce8;
+  border-color: #eab308;
+}
+
+.callout-info {
+  background: #eff6ff;
+  border-color: #3b82f6;
+}
+
+.callout-title {
+  font-weight: 600;
+  margin-bottom: 0.3rem;
+}
+
+/* ---- 课程导航 ---- */
+.lesson-nav {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e0e0e0;
+}
+
+.lesson-nav a {
+  font-size: 0.9rem;
+}
+
+/* ---- 课程元信息 ---- */
+.lesson-meta {
+  color: #6b7280;
+  font-size: 0.85rem;
+  margin-bottom: 1.5rem;
+}
+
+/* ---- 课节标识 ---- */
+.step {
+  counter-increment: step-counter;
+  position: relative;
+  padding-left: 3rem;
+  margin-bottom: 2rem;
+}
+
+.step::before {
+  content: counter(step-counter);
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 2rem;
+  height: 2rem;
+  background: #2563eb;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.steps-container {
+  counter-reset: step-counter;
+}
+
+/* ---- 测验 ---- */
+.quiz {
+  background: #f8fafc;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 1.5rem;
+  margin: 2rem 0;
+}
+
+.quiz h3 {
+  margin-top: 0;
+  color: #1e40af;
+}
+
+.quiz-question {
+  font-weight: 500;
+  margin-bottom: 1rem;
+}
+
+.quiz-options {
+  list-style: none;
+  padding: 0;
+}
+
+.quiz-option {
+  padding: 0.7rem 1rem;
+  margin-bottom: 0.5rem;
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  user-select: none;
+}
+
+.quiz-option:hover {
+  border-color: #93c5fd;
+  background: #eff6ff;
+}
+
+.quiz-option.correct {
+  border-color: #22c55e;
+  background: #f0fdf4;
+  color: #15803d;
+}
+
+.quiz-option.incorrect {
+  border-color: #ef4444;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.quiz-feedback {
+  display: none;
+  margin-top: 1rem;
+  padding: 0.8rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.quiz-feedback.show {
+  display: block;
+}
+
+.quiz-feedback.correct {
+  background: #f0fdf4;
+  color: #15803d;
+}
+
+.quiz-feedback.incorrect {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+/* ---- 终端/命令提示 ---- */
+.terminal {
+  background: #0f172a;
+  color: #e2e8f0;
+  border-radius: 8px;
+  padding: 1rem 1.2rem;
+  font-family: "JetBrains Mono", "Fira Code", "Consolas", monospace;
+  font-size: 0.85rem;
+  line-height: 1.7;
+  margin: 1rem 0;
+  overflow-x: auto;
+}
+
+.terminal .prompt {
+  color: #34d399;
+}
+
+.terminal .comment {
+  color: #64748b;
+}
+
+.terminal .output {
+  color: #94a3b8;
+}
+
+/* ---- 对比卡片（前后端对比） ---- */
+.compare-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.compare-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1rem;
+  background: white;
+}
+
+.compare-card h4 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.compare-card.frontend {
+  border-top: 3px solid #42b883;
+}
+
+.compare-card.backend {
+  border-top: 3px solid #2563eb;
+}
+
+@media (max-width: 600px) {
+  .compare-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---- 页脚 ---- */
+.footer {
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e0e0e0;
+  color: #6b7280;
+  font-size: 0.85rem;
+}
+
+/* ---- 打印优化 ---- */
+@media print {
+  body {
+    background: white;
+    max-width: none;
+    padding: 1rem;
+    font-size: 12pt;
+  }
+
+  pre, .terminal {
+    background: #f1f5f9 !important;
+    color: #1a1a1a !important;
+    border: 1px solid #ddd;
+  }
+
+  .quiz-option {
+    border: 1px solid #999;
+  }
+
+  a {
+    color: #1a1a1a;
+    border-bottom: none;
+  }
+}

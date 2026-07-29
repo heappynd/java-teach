@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>第 4 课：编写第一个 REST API - Java 后端学习</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<h1>第 4 课：编写第一个 REST API</h1>
+<p class="lesson-meta">预计用时：25 分钟 | 难度：入门 | 前置知识：<a href="0003-create-spring-boot-project.html">第 3 课 创建项目</a></p>
+
+<h2>目标：写一个能用的 API</h2>
+
+<p>你的 Spring Boot 项目已经跑起来了，但还没有接口。这节课我们要实现：</p>
+<ol>
+  <li>一个 <strong>GET 接口</strong>：返回问候语 <code>{ "message": "Hello, World!" }</code></li>
+  <li>一个带参数的 <strong>GET 接口</strong>：<code>/hello?name=Vue</code> -> <code>{ "message": "Hello, Vue!" }</code></li>
+  <li>一个 <strong>POST 接口</strong>：接收请求体数据并返回</li>
+</ol>
+
+<p>写完后你就能用浏览器和前端工具调用这些 API 了，就像你平时调后端接口一样。</p>
+
+<h2>Express vs Spring Boot：概念对照</h2>
+
+<p>你写前端时一定见过 Express/Koa 的路由，Spring Boot 的做法非常相似：</p>
+
+<div class="compare-grid">
+  <div class="compare-card frontend">
+    <h4>Express.js（你熟悉的）</h4>
+    <pre><code>app.get('/hello', (req, res) => {
+  res.json({
+    message: `Hello, ${req.query.name || 'World'}!`
+  })
+})
+
+app.post('/echo', (req, res) => {
+  res.json({
+    received: req.body
+  })
+})</code></pre>
+  </div>
+  <div class="compare-card backend">
+    <h4>Spring Boot（今天学的）</h4>
+    <pre><code>@RestController
+public class HelloController {
+
+  @GetMapping("/hello")
+  public Map<String, String> hello(
+      @RequestParam(defaultValue = "World")
+      String name) {
+    return Map.of("message",
+      "Hello, " + name + "!");
+  }
+
+  @PostMapping("/echo")
+  public Map<String, String> echo(
+      @RequestBody String body) {
+    return Map.of("received", body);
+  }
+}</code></pre>
+  </div>
+</div>
+
+<blockquote>
+  <p>核心逻辑完全一样：定义 URL 路径 -> 获取请求参数 -> 返回 JSON。只是语法不同。</p>
+</blockquote>
+
+<h2>开始写代码</h2>
+
+<div class="steps-container">
+
+<div class="step">
+  <h3>创建 Controller 类</h3>
+  <p>在 IDEA 中，右键 <code>com.yourname.demo</code> 包 -> <strong>New -> Java Class</strong>，命名为 <code>HelloController</code>。</p>
+  <p>目录结构会变成：</p>
+  <pre><code>src/main/java/com/yourname/demo/
+├── DemoApplication.java   <-- 启动类（已有）
+└── HelloController.java   <-- 新建的控制器</code></pre>
+  <div class="callout callout-info">
+    <p class="callout-title">什么是 Controller？</p>
+    <p>Controller 就是处理 HTTP 请求的类，相当于前端 Express 里的路由处理器。前端发请求到某个 URL，Controller 负责接收并返回数据。</p>
+  </div>
+</div>
+
+<div class="step">
+  <h3>写第一个 GET 接口</h3>
+  <p>将 <code>HelloController.java</code> 内容替换为：</p>
+  <pre><code>package com.yourname.demo;
+
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
+
+@RestController
+public class HelloController {
+
+    @GetMapping("/hello")
+    public Map<String, String> hello() {
+        return Map.of("message", "Hello, World!");
+    }
+}</code></pre>
+  <p>逐行解读：</p>
+  <table>
+    <tr>
+      <th>代码</th>
+      <th>含义</th>
+    </tr>
+    <tr>
+      <td><code>@RestController</code></td>
+      <td>告诉 Spring：这个类处理 HTTP 请求，返回值自动转成 JSON。相当于 Express 的路由模块</td>
+    </tr>
+    <tr>
+      <td><code>@GetMapping("/hello")</code></td>
+      <td>注册一个 GET 路由 <code>/hello</code>。相当于 <code>app.get('/hello', ...)</code></td>
+    </tr>
+    <tr>
+      <td><code>public Map&lt;String, String&gt; hello()</code></td>
+      <td>方法返回一个 Map。Spring 自动将 Map 转成 JSON 对象 <code>{"message": "Hello, World!"}</code></td>
+    </tr>
+    <tr>
+      <td><code>Map.of("message", "Hello, World!")</code></td>
+      <td>创建一个键值对。<code>Map.of</code> 类似 JS 的 <code>{ message: "Hello, World!" }</code></td>
+    </tr>
+  </table>
+  <div class="callout callout-tip">
+    <p class="callout-title">关键发现</p>
+    <p>你不需要手动调用 <code>JSON.stringify()</code> 或 <code>res.json()</code>。Spring Boot 自动把返回的对象转成 JSON，就像 Express 的 <code>res.json()</code> 帮你做了一样。</p>
+  </div>
+</div>
+
+<div class="step">
+  <h3>运行并测试</h3>
+  <p>点击 <code>DemoApplication</code> 旁边的绿色三角形运行项目（如果已经在运行，DevTools 会自动重启）。</p>
+  <p>浏览器打开 <a href="http://localhost:8080/hello" target="_blank">http://localhost:8080/hello</a>，你会看到：</p>
+  <pre><code>{"message":"Hello, World!"}</code></pre>
+  <p>这就是你的第一个 API！和你在前端用 axios 调用的接口一模一样。</p>
+</div>
+
+<div class="step">
+  <h3>添加带参数的接口</h3>
+  <p>在 <code>HelloController</code> 中添加第二个方法：</p>
+  <pre><code>@GetMapping("/greet")
+public Map<String, String> greet(
+        @RequestParam(defaultValue = "World") String name) {
+    return Map.of("message", "Hello, " + name + "!");
+}</code></pre>
+  <p>解读新注解：</p>
+  <table>
+    <tr>
+      <th>注解</th>
+      <th>前端类比</th>
+      <th>含义</th>
+    </tr>
+    <tr>
+      <td><code>@RequestParam</code></td>
+      <td><code>req.query.name</code></td>
+      <td>获取 URL 查询参数。<code>?name=Vue</code> 中的 <code>Vue</code></td>
+    </tr>
+    <tr>
+      <td><code>defaultValue = "World"</code></td>
+      <td><code>req.query.name || 'World'</code></td>
+      <td>参数默认值，不传时用 "World"</td>
+    </tr>
+  </table>
+  <p>测试：</p>
+  <ul>
+    <li>访问 <code>http://localhost:8080/greet</code> -> <code>{"message":"Hello, World!"}</code></li>
+    <li>访问 <code>http://localhost:8080/greet?name=Vue</code> -> <code>{"message":"Hello, Vue!"}</code></li>
+  </ul>
+</div>
+
+<div class="step">
+  <h3>写一个 POST 接口</h3>
+  <p>GET 接口能用浏览器测，POST 接口需要发请求体。在 Controller 中添加：</p>
+  <pre><code>@PostMapping("/echo")
+public Map<String, String> echo(@RequestBody String body) {
+    return Map.of("received", body);
+}</code></pre>
+  <table>
+    <tr>
+      <th>注解</th>
+      <th>前端类比</th>
+      <th>含义</th>
+    </tr>
+    <tr>
+      <td><code>@PostMapping("/echo")</code></td>
+      <td><code>app.post('/echo', ...)</code></td>
+      <td>注册 POST 路由</td>
+    </tr>
+    <tr>
+      <td><code>@RequestBody</code></td>
+      <td><code>req.body</code></td>
+      <td>获取请求体的数据。相当于 Express 中 <code>express.json()</code> 解析后的 <code>req.body</code></td>
+    </tr>
+  </table>
+  <p>用浏览器没法直接测 POST。你可以用以下任一方式测试：</p>
+  <p><strong>方式一：在浏览器控制台用 fetch</strong></p>
+  <pre><code>fetch('http://localhost:8080/echo', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ name: 'Vue', age: 7 })
+}).then(r => r.json()).then(console.log)</code></pre>
+  <p><strong>方式二：用 IDEA 自带的 HTTP Client</strong></p>
+  <p>在项目中新建一个 <code>test.http</code> 文件，写入：</p>
+  <pre><code>### 测试 POST 接口
+POST http://localhost:8080/echo
+Content-Type: application/json
+
+"Hello from IDEA"</code></pre>
+  <p>点击请求上方的绿色运行按钮，就能看到响应。</p>
+</div>
+
+</div>
+
+<h2>Spring Boot API 注解速查</h2>
+
+<table>
+  <tr>
+    <th>注解</th>
+    <th>前端类比</th>
+    <th>用途</th>
+  </tr>
+  <tr>
+    <td><code>@RestController</code></td>
+    <td>Express 路由模块</td>
+    <td>标记类为 API 控制器，返回值自动转 JSON</td>
+  </tr>
+  <tr>
+    <td><code>@GetMapping("/path")</code></td>
+    <td><code>app.get('/path', handler)</code></td>
+    <td>定义 GET 接口</td>
+  </tr>
+  <tr>
+    <td><code>@PostMapping("/path")</code></td>
+    <td><code>app.post('/path', handler)</code></td>
+    <td>定义 POST 接口</td>
+  </tr>
+  <tr>
+    <td><code>@PutMapping("/path")</code></td>
+    <td><code>app.put('/path', handler)</code></td>
+    <td>定义 PUT 接口</td>
+  </tr>
+  <tr>
+    <td><code>@DeleteMapping("/path")</code></td>
+    <td><code>app.delete('/path', handler)</code></td>
+    <td>定义 DELETE 接口</td>
+  </tr>
+  <tr>
+    <td><code>@RequestParam</code></td>
+    <td><code>req.query.xxx</code></td>
+    <td>获取查询参数 <code>?key=value</code></td>
+  </tr>
+  <tr>
+    <td><code>@PathVariable</code></td>
+    <td>Vue Router 的 <code>:id</code></td>
+    <td>获取路径参数 <code>/users/42</code> 中的 42</td>
+  </tr>
+  <tr>
+    <td><code>@RequestBody</code></td>
+    <td><code>req.body</code></td>
+    <td>获取请求体（POST/PUT 的 JSON 数据）</td>
+  </tr>
+</table>
+
+<div class="quiz">
+  <h3>小测验</h3>
+  <p class="quiz-question">@GetMapping 和 @PostMapping 的区别是什么？</p>
+  <ul class="quiz-options">
+    <li class="quiz-option" onclick="checkAnswer(this, false)">功能完全相同只是名字不同</li>
+    <li class="quiz-option" onclick="checkAnswer(this, true)">分别处理 GET 和 POST 请求方式</li>
+    <li class="quiz-option" onclick="checkAnswer(this, false)">GetMapping 比 PostMapping 更快</li>
+    <li class="quiz-option" onclick="checkAnswer(this, false)">PostMapping 只能用于删除操作</li>
+  </ul>
+  <div class="quiz-feedback" id="quiz-feedback"></div>
+</div>
+
+<div class="quiz">
+  <h3>小测验</h3>
+  <p class="quiz-question">前端发送 POST 请求带 JSON body，后端用什么接收？</p>
+  <ul class="quiz-options">
+    <li class="quiz-option" onclick="checkAnswer2(this, false)">用 @RequestParam 接收</li>
+    <li class="quiz-option" onclick="checkAnswer2(this, true)">用 @RequestBody 注解接收</li>
+    <li class="quiz-option" onclick="checkAnswer2(this, false)">用 @PathVariable 接收</li>
+    <li class="quiz-option" onclick="checkAnswer2(this, false)">用 @GetMapping 接收</li>
+  </ul>
+  <div class="quiz-feedback" id="quiz-feedback-2"></div>
+</div>
+
+<div class="quiz">
+  <h3>小测验</h3>
+  <p class="quiz-question">Spring Boot 方法返回 Map 时，响应是什么格式？</p>
+  <ul class="quiz-options">
+    <li class="quiz-option" onclick="checkAnswer3(this, false)">返回纯文本字符串</li>
+    <li class="quiz-option" onclick="checkAnswer3(this, true)">自动转换为 JSON 对象</li>
+    <li class="quiz-option" onclick="checkAnswer3(this, false)">返回 XML 格式数据</li>
+    <li class="quiz-option" onclick="checkAnswer3(this, false)">需要手动转格式才行</li>
+  </ul>
+  <div class="quiz-feedback" id="quiz-feedback-3"></div>
+</div>
+
+<div class="callout callout-tip">
+  <p class="callout-title">完成本课后</p>
+  <p>你已经能写 REST API 了！GET、POST、参数接收、JSON 返回都掌握了。这就是后端开发的核心--你现在写的东西，和你在 Vue3 里用 axios 调用的接口是同一回事。下一课我们将学习路径参数 <code>@PathVariable</code> 和更结构化的数据返回（DTO），向真实的 CRUD 接口迈进。遇到任何问题随时问我！</p>
+</div>
+
+<h2>推荐阅读</h2>
+<p>主资源：<a href="https://spring.io/guides/gs/rest-service" target="_blank">Building a RESTful Web Service - Spring 官方指南</a></p>
+<p>参考：<a href="../reference/glossary.html">Java 后端术语表</a> - Web 层注解部分</p>
+
+<div class="lesson-nav">
+  <a href="0003-create-spring-boot-project.html"><- 上一课：创建项目</a>
+  <a href="0005-path-params-and-dto.html">下一课：路径参数与 DTO -></a>
+</div>
+
+<div class="footer">
+  <p>有任何不清楚的地方？直接问我！我是你的 Java 后端老师，随时帮你解决疑问。</p>
+</div>
+
+<script>
+function checkAnswer(el, isCorrect) {
+  var options = el.parentNode.querySelectorAll('.quiz-option');
+  var feedback = document.getElementById('quiz-feedback');
+  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
+  if (isCorrect) {
+    el.classList.add('correct');
+    feedback.className = 'quiz-feedback show correct';
+    feedback.textContent = '正确！@GetMapping 处理 GET 请求（获取数据），@PostMapping 处理 POST 请求（提交数据），就像 Express 的 app.get 和 app.post。';
+  } else {
+    el.classList.add('incorrect');
+    feedback.className = 'quiz-feedback show incorrect';
+    feedback.textContent = '不对。它们对应 HTTP 的 GET 和 POST 方法，功能完全不同。GET 用于获取数据，POST 用于提交数据。';
+  }
+}
+
+function checkAnswer2(el, isCorrect) {
+  var options = el.parentNode.querySelectorAll('.quiz-option');
+  var feedback = document.getElementById('quiz-feedback-2');
+  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
+  if (isCorrect) {
+    el.classList.add('correct');
+    feedback.className = 'quiz-feedback show correct';
+    feedback.textContent = '正确！@RequestBody 用于接收请求体中的 JSON 数据，相当于 Express 的 req.body。@RequestParam 是查询参数，@PathVariable 是路径参数。';
+  } else {
+    el.classList.add('incorrect');
+    feedback.className = 'quiz-feedback show incorrect';
+    feedback.textContent = '不对。@RequestParam 接收的是 URL 查询参数（?key=value），接收请求体 JSON 要用 @RequestBody。';
+  }
+}
+
+function checkAnswer3(el, isCorrect) {
+  var options = el.parentNode.querySelectorAll('.quiz-option');
+  var feedback = document.getElementById('quiz-feedback-3');
+  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
+  if (isCorrect) {
+    el.classList.add('correct');
+    feedback.className = 'quiz-feedback show correct';
+    feedback.textContent = '正确！@RestController 会自动将返回的 Map 转为 JSON 对象，不需要手动转换，就像 Express 的 res.json()。';
+  } else {
+    el.classList.add('incorrect');
+    feedback.className = 'quiz-feedback show incorrect';
+    feedback.textContent = '不对。@RestController 标记的类，返回值会自动序列化为 JSON，不需要手动转换格式。';
+  }
+}
+</script>
+
+</body>
+</html>

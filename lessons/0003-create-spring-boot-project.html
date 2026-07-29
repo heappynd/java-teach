@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>第 3 课：创建第一个 Spring Boot 项目 - Java 后端学习</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<h1>第 3 课：创建第一个 Spring Boot 项目</h1>
+<p class="lesson-meta">预计用时：20 分钟 | 难度：入门 | 前置知识：<a href="0002-install-maven-on-windows.html">第 2 课 Maven 安装</a></p>
+
+<h2>Spring Initializr 是什么？</h2>
+
+<p>JDK 和 Maven 都装好了，现在来创建你的第一个 Spring Boot 项目！</p>
+
+<p>还记得前端怎么创建 Vue3 项目吗？</p>
+<div class="terminal">
+<span class="comment"># 前端创建 Vue3 项目</span><br>
+npm create vue@latest
+</div>
+
+<p>Java 也有类似的工具，叫 <strong>Spring Initializr</strong>（start.spring.io），它是 Spring 官方的项目生成器：</p>
+
+<div class="compare-grid">
+  <div class="compare-card frontend">
+    <h4>前端（你已熟悉）</h4>
+    <p><code>npm create vue@latest</code></p>
+    <p>选配置 -> 自动生成项目 -> 解压即用</p>
+  </div>
+  <div class="compare-card backend">
+    <h4>后端（今天学的）</h4>
+    <p><a href="https://start.spring.io" target="_blank">start.spring.io</a></p>
+    <p>选配置 -> 自动生成项目 -> 解压即用</p>
+  </div>
+</div>
+
+<h2>先装一个 IDE</h2>
+
+<p>写 Vue3 你可能用 VS Code，写 Java 也有几个选择：</p>
+
+<table>
+  <tr>
+    <th>IDE</th>
+    <th>前端类比</th>
+    <th>推荐度</th>
+  </tr>
+  <tr>
+    <td><strong>IntelliJ IDEA Community</strong>（免费）</td>
+    <td>WebStorm 社区版</td>
+    <td>最推荐 - Java 生态最好的 IDE，JetBrains 出品</td>
+  </tr>
+  <tr>
+    <td><strong>VS Code + Extension Pack for Java</strong></td>
+    <td>你正在用的 VS Code</td>
+    <td>推荐 - 熟悉度高，装插件即可</td>
+  </tr>
+</table>
+
+<div class="callout callout-tip">
+  <p class="callout-title">建议</p>
+  <p>如果你不想换 IDE，在 VS Code 中安装 <strong>Extension Pack for Java</strong> 和 <strong>Spring Boot Extension Pack</strong> 这两个插件包就够了。在 VS Code 扩展商店搜索即可。</p>
+  <p>如果想获得最佳 Java 开发体验，推荐下载 <a href="https://www.jetbrains.com/idea/download/" target="_blank">IntelliJ IDEA Community Edition</a>（免费版，功能足够初学使用）。</p>
+</div>
+
+<h2>创建项目</h2>
+
+<div class="steps-container">
+
+<div class="step">
+  <h3>打开 Spring Initializr</h3>
+  <p>打开浏览器，访问 <a href="https://start.spring.io" target="_blank">https://start.spring.io</a></p>
+  <p>你会看到一个项目配置页面，类似 Vue CLI 的交互式配置。</p>
+</div>
+
+<div class="step">
+  <h3>配置项目参数</h3>
+  <p>按以下设置配置：</p>
+  <table>
+    <tr>
+      <th>选项</th>
+      <th>选择</th>
+      <th>说明</th>
+    </tr>
+    <tr>
+      <td>Project</td>
+      <td><strong>Maven</strong></td>
+      <td>我们用 Maven，不用 Gradle</td>
+    </tr>
+    <tr>
+      <td>Language</td>
+      <td><strong>Java</strong></td>
+      <td>不选 Kotlin 或 Groovy</td>
+    </tr>
+    <tr>
+      <td>Spring Boot</td>
+      <td><strong>最新稳定版</strong>（不带 SNAPSHOT）</td>
+      <td>选版本号后面没有 "(SNAPSHOT)" 的</td>
+    </tr>
+    <tr>
+      <td>Group</td>
+      <td><code>com.yourname</code></td>
+      <td>你的组织标识，类似 npm 的 @scope</td>
+    </tr>
+    <tr>
+      <td>Artifact</td>
+      <td><code>demo</code></td>
+      <td>项目名，类似 npm 包名</td>
+    </tr>
+    <tr>
+      <td>Name</td>
+      <td><code>demo</code></td>
+      <td>自动填充，不用改</td>
+    </tr>
+    <tr>
+      <td>Description</td>
+      <td><code>My first Spring Boot project</code></td>
+      <td>项目描述，随意</td>
+    </tr>
+    <tr>
+      <td>Package name</td>
+      <td><code>com.yourname.demo</code></td>
+      <td>自动填充，不用改</td>
+    </tr>
+    <tr>
+      <td>Packaging</td>
+      <td><strong>Jar</strong></td>
+      <td>选 Jar 不选 War。Jar 可以直接 java -jar 运行</td>
+    </tr>
+    <tr>
+      <td>Java</td>
+      <td><strong>21</strong></td>
+      <td>我们装的 JDK 21</td>
+    </tr>
+  </table>
+</div>
+
+<div class="step">
+  <h3>添加依赖</h3>
+  <p>点击右上角 <strong>"Add Dependencies"</strong> 按钮，搜索并添加以下依赖：</p>
+  <table>
+    <tr>
+      <th>依赖名</th>
+      <th>作用</th>
+      <th>前端类比</th>
+    </tr>
+    <tr>
+      <td><strong>Spring Web</strong></td>
+      <td>Web 开发能力：REST API、内嵌 Tomcat 服务器</td>
+      <td>相当于 axios + express</td>
+    </tr>
+    <tr>
+      <td><strong>Spring Boot DevTools</strong></td>
+      <td>开发热重载，代码修改后自动重启</td>
+      <td>相当于 Vite 的 HMR</td>
+    </tr>
+  </table>
+  <div class="callout callout-info">
+    <p class="callout-title">关于依赖</p>
+    <p>Spring Initializr 中的 "Dependencies" 就像 <code>npm create vue</code> 时选择是否要 Router、Pinia、Vitest 一样。你选的每个依赖都会自动写入 <code>pom.xml</code>（相当于 <code>package.json</code>）。</p>
+  </div>
+</div>
+
+<div class="step">
+  <h3>生成并下载项目</h3>
+  <p>点击底部的 <strong>"GENERATE"</strong> 按钮，会下载一个 <code>demo.zip</code> 文件。</p>
+  <p>将 zip 解压到你的工作目录，比如 <code>C:\coding\demo</code>。</p>
+</div>
+
+<div class="step">
+  <h3>用 IDE 打开项目</h3>
+  <p><strong>VS Code</strong>：File -> Open Folder -> 选择 <code>C:\coding\demo</code></p>
+  <p><strong>IntelliJ IDEA</strong>：File -> Open -> 选择 <code>C:\coding\demo</code> 文件夹</p>
+  <div class="callout callout-warn">
+    <p class="callout-title">首次打开会等一会</p>
+    <p>IDE 打开后会自动运行 Maven 下载依赖（就像 <code>npm install</code>）。首次需要下载 Spring Boot 框架，可能需要 1-3 分钟。看右下角状态栏有进度条。配置了阿里云镜像会快很多。</p>
+  </div>
+</div>
+
+</div>
+
+<h2>理解项目结构</h2>
+
+<p>项目打开后，让我们对比一下 Spring Boot 和 Vue3 的项目结构：</p>
+
+<div class="compare-grid">
+  <div class="compare-card frontend">
+    <h4>Vue3 项目</h4>
+    <pre><code>my-vue-app/
+├── index.html
+├── package.json      <-- 依赖声明
+├── vite.config.ts    <-- 构建配置
+├── src/
+│   ├── main.ts       <-- 入口文件
+│   ├── App.vue       <-- 根组件
+│   └── components/
+├── public/
+└── node_modules/     <-- 依赖（每项目独立）</code></pre>
+  </div>
+  <div class="compare-card backend">
+    <h4>Spring Boot 项目</h4>
+    <pre><code>demo/
+├── pom.xml           <-- 依赖声明
+├── src/
+│   ├── main/
+│   │   ├── java/
+│   │   │   └── com/yourname/demo/
+│   │   │       └── DemoApplication.java  <-- 入口
+│   │   └── resources/
+│   │       └── application.properties    <-- 配置
+│   └── test/
+│       └── java/
+│           └── com/yourname/demo/
+│               └── DemoApplicationTests.java
+├── mvnw / mvnw.cmd   <-- Maven Wrapper
+└── target/           <-- 编译输出（= dist/）</code></pre>
+  </div>
+</div>
+
+<h3>关键文件解读</h3>
+
+<table>
+  <tr>
+    <th>文件</th>
+    <th>前端类比</th>
+    <th>作用</th>
+  </tr>
+  <tr>
+    <td><code>pom.xml</code></td>
+    <td><code>package.json</code></td>
+    <td>声明项目信息和依赖。Maven 读取它来构建项目</td>
+  </tr>
+  <tr>
+    <td><code>DemoApplication.java</code></td>
+    <td><code>main.ts</code></td>
+    <td>程序入口。<code>@SpringBootApplication</code> 注解标记，相当于 <code>createApp(App).mount('#app')</code></td>
+  </tr>
+  <tr>
+    <td><code>application.properties</code></td>
+    <td><code>.env</code></td>
+    <td>配置文件：服务器端口、数据库连接等。也可以用 <code>.yml</code> 格式</td>
+  </tr>
+  <tr>
+    <td><code>mvnw.cmd</code></td>
+    <td><code>npx</code></td>
+    <td>Maven Wrapper，让没装 Maven 的人也能构建项目。类似 npx</td>
+  </tr>
+  <tr>
+    <td><code>target/</code></td>
+    <td><code>dist/</code></td>
+    <td>编译输出目录，运行 <code>mvn compile</code> 后生成</td>
+  </tr>
+</table>
+
+<h2>看看入口文件</h2>
+
+<p>打开 <code>src/main/java/com/yourname/demo/DemoApplication.java</code>：</p>
+
+<pre><code>package com.yourname.demo;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class DemoApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(DemoApplication.class, args);
+    }
+
+}</code></pre>
+
+<p>别被这段代码吓到，逐行翻译：</p>
+
+<table>
+  <tr>
+    <th>Java 代码</th>
+    <th>前端类比</th>
+    <th>含义</th>
+  </tr>
+  <tr>
+    <td><code>package com.yourname.demo;</code></td>
+    <td>命名空间 / 文件路径</td>
+    <td>声明这个类属于哪个包。对应目录结构 <code>com/yourname/demo/</code></td>
+  </tr>
+  <tr>
+    <td><code>import org.springframework...*</code></td>
+    <td><code>import { createApp } from 'vue'</code></td>
+    <td>导入 Spring Boot 框架的类</td>
+  </tr>
+  <tr>
+    <td><code>@SpringBootApplication</code></td>
+    <td><code>createApp(App)</code></td>
+    <td>告诉 Spring：这是应用入口，自动配置启动</td>
+  </tr>
+  <tr>
+    <td><code>public class DemoApplication</code></td>
+    <td><code>export default { ... }</code></td>
+    <td>定义一个类。Java 一切皆类，不像 JS 可以有独立函数</td>
+  </tr>
+  <tr>
+    <td><code>public static void main(String[] args)</code></td>
+    <td>程序入口函数</td>
+    <td>Java 程序的起点，相当于浏览器加载 JS 时第一个执行的代码</td>
+  </tr>
+  <tr>
+    <td><code>SpringApplication.run(...)</code></td>
+    <td><code>.mount('#app')</code></td>
+    <td>启动 Spring Boot 应用，启动内嵌的 Tomcat 服务器</td>
+  </tr>
+</table>
+
+<h2>运行项目</h2>
+
+<div class="steps-container">
+
+<div class="step">
+  <h3>方式一：用 Maven 命令运行</h3>
+  <p>在项目根目录（<code>pom.xml</code> 所在目录）打开终端：</p>
+  <div class="terminal">
+<span class="prompt">PS C:\coding\demo&gt;</span> mvn spring-boot:run
+  </div>
+  <p>首次运行会编译代码并启动内嵌 Tomcat 服务器。看到类似以下输出说明成功了：</p>
+  <div class="terminal">
+<span class="output">  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+ :: Spring Boot ::  (v4.1.0)
+
+INFO  --- Tomcat initialized with port 8080 (http)
+INFO  --- Started DemoApplication in 2.134 seconds</span>
+  </div>
+  <p>打开浏览器访问 <a href="http://localhost:8080" target="_blank">http://localhost:8080</a>，你会看到一个错误页面（Whitelabel Error Page）。<strong>别慌，这是正常的！</strong>因为我们还没写任何接口。</p>
+  <div class="callout callout-tip">
+    <p class="callout-title">前端类比</p>
+    <p>就像你 <code>npm run dev</code> 启动了 Vite 开发服务器，但还没写任何路由，访问页面是空白的一样。Spring Boot 已经跑起来了，只是还没有 API 接口。</p>
+  </div>
+  <p>按 <code>Ctrl + C</code> 停止运行。</p>
+</div>
+
+<div class="step">
+  <h3>方式二：用 IDE 运行（推荐）</h3>
+  <p><strong>VS Code</strong>：打开 <code>DemoApplication.java</code>，在 <code>main</code> 方法上方会出现 "Run" 按钮，点击即可。</p>
+  <p><strong>IntelliJ IDEA</strong>：打开 <code>DemoApplication.java</code>，点击 <code>main</code> 方法旁边的绿色三角形运行按钮。</p>
+  <p>IDE 运行方式更方便，支持断点调试，后续开发推荐用这种方式。</p>
+</div>
+
+</div>
+
+<div class="quiz">
+  <h3>小测验</h3>
+  <p class="quiz-question">Spring Initializr 中的 "Dependencies" 相当于前端什么操作？</p>
+  <ul class="quiz-options">
+    <li class="quiz-option" onclick="checkAnswer(this, false)">相当于配置 ESLint 规则</li>
+    <li class="quiz-option" onclick="checkAnswer(this, true)">相当于选择要装哪些库</li>
+    <li class="quiz-option" onclick="checkAnswer(this, false)">相当于配置 Webpack 打包</li>
+    <li class="quiz-option" onclick="checkAnswer(this, false)">相当于设置 TypeScript 版本</li>
+  </ul>
+  <div class="quiz-feedback" id="quiz-feedback"></div>
+</div>
+
+<div class="quiz">
+  <h3>小测验</h3>
+  <p class="quiz-question">访问 localhost:8080 出现错误页面是为什么？</p>
+  <ul class="quiz-options">
+    <li class="quiz-option" onclick="checkAnswer2(this, false)">因为 Spring Boot 启动失败了</li>
+    <li class="quiz-option" onclick="checkAnswer2(this, true)">因为还没有定义任何接口</li>
+    <li class="quiz-option" onclick="checkAnswer2(this, false)">因为端口 8080 被占用</li>
+    <li class="quiz-option" onclick="checkAnswer2(this, false)">因为 JDK 版本不兼容</li>
+  </ul>
+  <div class="quiz-feedback" id="quiz-feedback-2"></div>
+</div>
+
+<div class="callout callout-tip">
+  <p class="callout-title">完成本课后</p>
+  <p>你已经创建了第一个 Spring Boot 项目并成功运行！虽然还没有 API 接口，但后端服务器已经能跑起来了。下一课我们就要写第一个 REST API 接口，让浏览器能真正返回数据！遇到任何问题随时问我。</p>
+</div>
+
+<h2>推荐阅读</h2>
+<p>主资源：<a href="https://spring.io/quickstart" target="_blank">Spring Quickstart Guide - 官方快速入门</a></p>
+<p>参考：<a href="../reference/glossary.html">Java 后端术语表</a> - 项目结构相关术语</p>
+
+<div class="lesson-nav">
+  <a href="0002-install-maven-on-windows.html"><- 上一课：安装 Maven</a>
+  <a href="0004-first-rest-api.html">下一课：编写第一个 REST API -></a>
+</div>
+
+<div class="footer">
+  <p>有任何不清楚的地方？直接问我！我是你的 Java 后端老师，随时帮你解决疑问。</p>
+</div>
+
+<script>
+function checkAnswer(el, isCorrect) {
+  var options = el.parentNode.querySelectorAll('.quiz-option');
+  var feedback = document.getElementById('quiz-feedback');
+  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
+  if (isCorrect) {
+    el.classList.add('correct');
+    feedback.className = 'quiz-feedback show correct';
+    feedback.textContent = '正确！Dependencies 就像 npm create vue 时选择是否要 Router、Pinia、Vitest 一样，选中的依赖会自动写入 pom.xml。';
+  } else {
+    el.classList.add('incorrect');
+    feedback.className = 'quiz-feedback show incorrect';
+    feedback.textContent = '不对。Dependencies 不是打包或 lint 配置，它选择的是项目要用到哪些库（如 Web、数据库等），相当于 npm 安装依赖包。';
+  }
+}
+
+function checkAnswer2(el, isCorrect) {
+  var options = el.parentNode.querySelectorAll('.quiz-option');
+  var feedback = document.getElementById('quiz-feedback-2');
+  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
+  if (isCorrect) {
+    el.classList.add('correct');
+    feedback.className = 'quiz-feedback show correct';
+    feedback.textContent = '正确！Spring Boot 已成功启动，但我们还没写任何 API 接口，所以访问根路径返回错误页面。下一课就会写第一个接口！';
+  } else {
+    el.classList.add('incorrect');
+    feedback.className = 'quiz-feedback show incorrect';
+    feedback.textContent = '不对。Spring Boot 已经成功启动了（看日志 "Started DemoApplication"）。错误页面是因为还没定义任何接口处理请求。';
+  }
+}
+</script>
+
+</body>
+</html>
