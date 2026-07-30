@@ -128,6 +128,15 @@ public class HelloController {
     <p class="callout-title">关键发现</p>
     <p>你不需要手动调用 <code>JSON.stringify()</code> 或 <code>res.json()</code>。Spring Boot 自动把返回的对象转成 JSON，就像 Express 的 <code>res.json()</code> 帮你做了一样。</p>
   </div>
+  <div class="callout callout-jdk8">
+    <p class="callout-title">不支持</p>
+    <p><code>Map.of()</code> 是 JDK 9+ 引入的不可变 Map 工厂方法，JDK 8 中不可用。本课所有 <code>Map.of()</code> 调用的 JDK 8 替代写法：</p>
+    <pre><code>// JDK 8 写法
+Map&lt;String, String&gt; result = new HashMap&lt;&gt;();
+result.put("message", "Hello, World!");
+return result;</code></pre>
+    <p>单键值对时也可用 <code>Collections.singletonMap("message", "Hello, World!")</code>。国内 JDK 8 项目中常用 Lombok 的 <code>@Builder</code> 或直接 <code>new HashMap</code>。</p>
+  </div>
 </div>
 
 <div class="step">

@@ -185,7 +185,47 @@
   </tr>
 </table>
 
-<h2>数据层</h2>
+<h2>数据层（MyBatis Plus）</h2>
+
+<table>
+  <tr>
+    <th>术语</th>
+    <th>前端类比</th>
+    <th>说明</th>
+  </tr>
+  <tr>
+    <td><strong>MyBatis</strong></td>
+    <td>SQL 模板引擎</td>
+    <td>Java 的半自动 ORM 框架。手写 SQL，框架负责参数映射和结果映射。灵活度高，国内主流。</td>
+  </tr>
+  <tr>
+    <td><strong>MyBatis-Plus</strong></td>
+    <td>MyBatis + 自动 CRUD</td>
+    <td>MyBatis 的增强工具包。继承 BaseMapper 就能免手写 SQL 实现 CRUD，也可手写复杂 SQL。国内企业最流行的数据层方案。</td>
+  </tr>
+  <tr>
+    <td><strong>Mapper</strong></td>
+    <td>数据访问接口</td>
+    <td>定义数据库操作的接口。MyBatis Plus 的 Mapper 继承 BaseMapper 即可获得 CRUD 方法。</td>
+  </tr>
+  <tr>
+    <td><strong>BaseMapper</strong></td>
+    <td>Prisma 的自动 CRUD</td>
+    <td>MyBatis Plus 提供的通用 Mapper 接口。继承后自动获得 insert、deleteById、updateById、selectById、selectList 等方法。</td>
+  </tr>
+  <tr>
+    <td><strong>Entity</strong></td>
+    <td>Prisma Model</td>
+    <td>映射到数据库表的 Java 类。一个 Entity 类 = 一张数据库表。用 <code>@TableName</code> 标注表名。</td>
+  </tr>
+  <tr>
+    <td><strong>条件构造器</strong><br>QueryWrapper / LambdaQueryWrapper</td>
+    <td>Prisma 的 where 条件</td>
+    <td>MyBatis Plus 的链式查询构建器，用代码拼接 WHERE 条件，避免手写 SQL 字符串。</td>
+  </tr>
+</table>
+
+<h2>数据层（其他方案，了解即可）</h2>
 
 <table>
   <tr>
@@ -196,27 +236,12 @@
   <tr>
     <td><strong>JPA</strong><br>Java Persistence API</td>
     <td>ORM（如 Prisma）</td>
-    <td>Java 的 ORM 标准。将 Java 对象映射到数据库表，类似 Prisma 对 TS 的意义。</td>
-  </tr>
-  <tr>
-    <td><strong>Spring Data JPA</strong></td>
-    <td>Prisma + 自动 CRUD</td>
-    <td>Spring 对 JPA 的封装，只需定义接口就能自动生成 CRUD 操作。</td>
-  </tr>
-  <tr>
-    <td><strong>Entity</strong></td>
-    <td>Prisma Model</td>
-    <td>映射到数据库表的 Java 类。一个 Entity 类 = 一张数据库表。</td>
-  </tr>
-  <tr>
-    <td><strong>Repository</strong></td>
-    <td>数据访问层</td>
-    <td>提供数据库操作接口。Spring Data JPA 会自动实现它。</td>
+    <td>Java 的 ORM 标准。全自动 ORM，无需手写 SQL。Spring Data JPA 是其 Spring 封装。本课程不使用，但面试常考。</td>
   </tr>
   <tr>
     <td><strong>Hibernate</strong></td>
     <td>Prisma 的底层引擎</td>
-    <td>JPA 的主流实现框架。Spring Data JPA 底层使用的就是 Hibernate。</td>
+    <td>JPA 的主流实现框架。</td>
   </tr>
 </table>
 

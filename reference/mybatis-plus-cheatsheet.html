@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MyBatis Plus 速查表 - Java 后端学习</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<h1>MyBatis Plus 速查表</h1>
+<p class="lesson-meta">参考文档 | 打印友好 | 随查随用</p>
+
+<blockquote>
+  <p>MyBatis Plus 是 MyBatis 的增强工具包，继承 BaseMapper 即可获得 CRUD 能力，也可手写复杂 SQL。国内企业最流行的数据层方案。</p>
+</blockquote>
+
+<h2>常用注解</h2>
+
+<table>
+  <tr>
+    <th>注解</th>
+    <th>用途</th>
+    <th>示例</th>
+  </tr>
+  <tr>
+    <td><code>@TableName("users")</code></td>
+    <td>类映射到数据库表</td>
+    <td>类名与表名不同时必须用</td>
+  </tr>
+  <tr>
+    <td><code>@TableId(type = IdType.AUTO)</code></td>
+    <td>主键，自增策略</td>
+    <td>PostgreSQL 用 <code>IdType.AUTO</code></td>
+  </tr>
+  <tr>
+    <td><code>@TableField("user_name")</code></td>
+    <td>字段映射到列名</td>
+    <td>字段名与列名不同时用</td>
+  </tr>
+  <tr>
+    <td><code>@TableField(exist = false)</code></td>
+    <td>该字段不映射到数据库列</td>
+    <td>仅用于业务逻辑的临时字段</td>
+  </tr>
+</table>
+
+<h2>BaseMapper CRUD 方法</h2>
+
+<table>
+  <tr>
+    <th>方法</th>
+    <th>SQL 等价</th>
+    <th>说明</th>
+  </tr>
+  <tr>
+    <td><code>insert(entity)</code></td>
+    <td>INSERT INTO ...</td>
+    <td>插入，自增 id 自动回填</td>
+  </tr>
+  <tr>
+    <td><code>deleteById(id)</code></td>
+    <td>DELETE WHERE id = ?</td>
+    <td>按主键删除</td>
+  </tr>
+  <tr>
+    <td><code>deleteByIds(idList)</code></td>
+    <td>DELETE WHERE id IN (...)</td>
+    <td>批量删除</td>
+  </tr>
+  <tr>
+    <td><code>updateById(entity)</code></td>
+    <td>UPDATE SET ... WHERE id = ?</td>
+    <td>按主键更新（null 字段不更新）</td>
+  </tr>
+  <tr>
+    <td><code>selectById(id)</code></td>
+    <td>SELECT WHERE id = ?</td>
+    <td>按主键查单条</td>
+  </tr>
+  <tr>
+    <td><code>selectBatchIds(idList)</code></td>
+    <td>SELECT WHERE id IN (...)</td>
+    <td>批量查询</td>
+  </tr>
+  <tr>
+    <td><code>selectList(wrapper)</code></td>
+    <td>SELECT WHERE ...</td>
+    <td>条件查询，null = 查全部</td>
+  </tr>
+  <tr>
+    <td><code>selectOne(wrapper)</code></td>
+    <td>SELECT WHERE ... LIMIT 1</td>
+    <td>查单条，多条会报错</td>
+  </tr>
+  <tr>
+    <td><code>selectCount(wrapper)</code></td>
+    <td>SELECT COUNT(*)</td>
+    <td>计数</td>
+  </tr>
+</table>
+
+<h2>条件构造器 QueryWrapper</h2>
+
+<p>用于 <code>selectList</code>、<code>selectOne</code>、<code>selectCount</code> 等方法，拼接 WHERE 条件。</p>
+
+<pre><code>// 方式一：QueryWrapper（字符串字段名）
+QueryWrapper&lt;User&gt; wrapper = new QueryWrapper&lt;&gt;();
+wrapper.eq("name", "Vue");
+List&lt;User&gt; users = userMapper.selectList(wrapper);
+// SQL: SELECT * FROM users WHERE name = 'Vue'
+
+// 方式二：LambdaQueryWrapper（方法引用，推荐）
+LambdaQueryWrapper&lt;User&gt; wrapper = new LambdaQueryWrapper&lt;&gt;();
+wrapper.eq(User::getName, "Vue");
+List&lt;User&gt; users = userMapper.selectList(wrapper);</code></pre>
+
+<h3>常用条件方法</h3>
+
+<table>
+  <tr>
+    <th>方法</th>
+    <th>SQL 等价</th>
+    <th>示例</th>
+  </tr>
+  <tr>
+    <td><code>eq(field, value)</code></td>
+    <td>field = value</td>
+    <td><code>wrapper.eq(User::getName, "Vue")</code></td>
+  </tr>
+  <tr>
+    <td><code>ne(field, value)</code></td>
+    <td>field != value</td>
+    <td><code>wrapper.ne(User::getName, "Vue")</code></td>
+  </tr>
+  <tr>
+    <td><code>gt(field, value)</code></td>
+    <td>field &gt; value</td>
+    <td><code>wrapper.gt(User::getId, 5)</code></td>
+  </tr>
+  <tr>
+    <td><code>ge(field, value)</code></td>
+    <td>field &gt;= value</td>
+    <td><code>wrapper.ge(User::getId, 5)</code></td>
+  </tr>
+  <tr>
+    <td><code>lt(field, value)</code></td>
+    <td>field &lt; value</td>
+    <td><code>wrapper.lt(User::getId, 10)</code></td>
+  </tr>
+  <tr>
+    <td><code>le(field, value)</code></td>
+    <td>field &lt;= value</td>
+    <td><code>wrapper.le(User::getId, 10)</code></td>
+  </tr>
+  <tr>
+    <td><code>like(field, value)</code></td>
+    <td>field LIKE %value%</td>
+    <td><code>wrapper.like(User::getName, "Vu")</code></td>
+  </tr>
+  <tr>
+    <td><code>likeRight(field, value)</code></td>
+    <td>field LIKE value%</td>
+    <td>前缀匹配</td>
+  </tr>
+  <tr>
+    <td><code>likeLeft(field, value)</code></td>
+    <td>field LIKE %value</td>
+    <td>后缀匹配</td>
+  </tr>
+  <tr>
+    <td><code>in(field, list)</code></td>
+    <td>field IN (...)</td>
+    <td><code>wrapper.in(User::getId, Arrays.asList(1,2,3))</code></td>
+  </tr>
+  <tr>
+    <td><code>isNull(field)</code></td>
+    <td>field IS NULL</td>
+    <td><code>wrapper.isNull(User::getEmail)</code></td>
+  </tr>
+  <tr>
+    <td><code>orderByDesc(field)</code></td>
+    <td>ORDER BY field DESC</td>
+    <td><code>wrapper.orderByDesc(User::getId)</code></td>
+  </tr>
+  <tr>
+    <td><code>orderByAsc(field)</code></td>
+    <td>ORDER BY field ASC</td>
+    <td><code>wrapper.orderByAsc(User::getName)</code></td>
+  </tr>
+</table>
+
+<h3>链式调用示例</h3>
+
+<pre><code>// 多条件 + 排序
+LambdaQueryWrapper&lt;User&gt; wrapper = new LambdaQueryWrapper&lt;&gt;();
+wrapper.like(User::getName, "e")
+       .gt(User::getId, 1)
+       .orderByDesc(User::getId);
+List&lt;User&gt; users = userMapper.selectList(wrapper);
+// SQL: SELECT * FROM users
+//      WHERE name LIKE '%e%' AND id > 1
+//      ORDER BY id DESC</code></pre>
+
+<h2>application.yml 常用配置</h2>
+
+<pre><code>mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl  # 打印 SQL
+    map-underscore-to-camel-case: true                      # 下划线转驼峰
+  global-config:
+    db-config:
+      id-type: auto          # 全局主键策略
+      logic-delete-field: deleted  # 逻辑删除字段名
+      logic-delete-value: 1        # 已删除值
+      logic-not-delete-value: 0    # 未删除值</code></pre>
+
+<h2>依赖坐标速查</h2>
+
+<table>
+  <tr>
+    <th>场景</th>
+    <th>JDK 要求</th>
+    <th>artifactId</th>
+  </tr>
+  <tr>
+    <td>Spring Boot 4.x</td>
+    <td>JDK 17+</td>
+    <td><code>mybatis-plus-spring-boot4-starter</code></td>
+  </tr>
+  <tr>
+    <td>Spring Boot 3.x</td>
+    <td>JDK 17+</td>
+    <td><code>mybatis-plus-spring-boot3-starter</code></td>
+  </tr>
+  <tr>
+    <td>Spring Boot 2.7.x</td>
+    <td>JDK 8</td>
+    <td><code>mybatis-plus-boot-starter</code></td>
+  </tr>
+  <tr>
+    <td>PostgreSQL 驱动</td>
+    <td>-</td>
+    <td><code>postgresql</code>（版本由 Spring Boot 管理）</td>
+  </tr>
+</table>
+
+<h2>Entity 模板（复制即用）</h2>
+
+<pre><code>@TableName("表名")
+public class EntityName {
+
+    @TableId(type = IdType.AUTO)
+    private Long id;
+
+    private String field1;
+    private String field2;
+
+    public EntityName() {}
+
+    // getter / setter ...
+}</code></pre>
+
+<div class="callout callout-tip">
+  <p class="callout-title">Lombok 简化</p>
+  <p>国内项目中常用 Lombok 注解替代手写 getter/setter：</p>
+  <pre><code>@Data                  // getter/setter/toString/equals
+@TableName("users")
+public class User {
+    @TableId(type = IdType.AUTO)
+    private Long id;
+    private String name;
+    private String email;
+}</code></pre>
+  <p>加 <code>@Data</code> 后无需手写 getter/setter，IDEA 装 Lombok 插件即可。</p>
+</div>
+
+<div class="footer">
+  <p><a href="../lessons/0006-connect-postgresql.html">第 6 课：连接 PostgreSQL + MyBatis Plus</a> | <a href="../RESOURCES.md">资源列表</a> | <a href="../MISSION.md">学习使命</a></p>
+</div>
+
+</body>
+</html>

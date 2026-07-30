@@ -38,6 +38,28 @@
 - [Baeldung - Spring Boot Tutorials](https://www.baeldung.com/spring-boot)
   高质量 Java/Spring 博客，实战导向。用于：具体问题排查和示例参考。
 
+### 数据库（PostgreSQL）
+
+- [PostgreSQL 官方文档](https://www.postgresql.org/docs/)
+  PostgreSQL 官方文档，涵盖安装、配置、SQL 语法等。用于：数据库参考。
+- [PostgreSQL Tutorial](https://www.postgresqltutorial.com/)
+  PostgreSQL 入门教程，从安装到高级查询。用于：快速学习 PostgreSQL。
+- [PostgreSQL Downloads](https://www.postgresql.org/download/windows/)
+  Windows 版 PostgreSQL 安装包下载。用于：本地安装。
+- [DBeaver](https://dbeaver.io/)
+  免费开源的数据库管理工具，支持 PostgreSQL/MySQL 等所有主流数据库。用于：替代 pgAdmin，实际工作中常用。
+
+### MyBatis Plus
+
+- [MyBatis-Plus 官方文档](https://baomidou.com/)
+  MyBatis-Plus 官方中文文档，涵盖快速开始、配置、CRUD、条件构造器等。用于：MyBatis Plus 学习主资源。
+- [MyBatis-Plus GitHub](https://github.com/baomidou/mybatis-plus)
+  MyBatis-Plus 源码仓库。用于：查看源码和 issue。
+- [MyBatis 官方文档](https://mybatis.org/mybatis-3/zh/index.html)
+  MyBatis 底层框架文档。用于：理解 MyBatis Plus 底层机制。
+- [Maven Repository - MyBatis Plus](https://mvnrepository.com/artifact/com.baomidou/mybatis-plus-spring-boot4-starter)
+  MyBatis Plus Spring Boot 4 Starter 坐标。用于：查找 pom.xml 依赖版本。
+
 ## Wisdom (Communities)
 
 - [r/javahelp](https://www.reddit.com/r/javahelp/)

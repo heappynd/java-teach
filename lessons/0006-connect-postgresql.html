@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>第 6 课：连接 PostgreSQL + MyBatis Plus - Java 后端学习</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<h1>第 6 课：连接 PostgreSQL + MyBatis Plus</h1>
+<p class="lesson-meta">预计用时：40 分钟 | 难度：进阶 | 前置知识：<a href="0005-path-params-and-dto.html">第 5 课 路径参数与 DTO</a></p>
+
+<h2>目标：让数据真正持久化</h2>
+
+<p>上一课的用户管理 API 能跑，但数据存在内存里 -- 重启就没了。这节课我们换上真正的数据库：<strong>PostgreSQL</strong> + <strong>MyBatis Plus</strong>，让数据持久化。</p>
+
+<div class="compare-grid">
+  <div class="compare-card frontend">
+    <h4>前端（你已熟悉）</h4>
+    <p>Vue3 + Prisma 连接 PostgreSQL</p>
+    <p>定义 Model -> 自动 CRUD -> 数据持久化</p>
+  </div>
+  <div class="compare-card backend">
+    <h4>后端（今天学的）</h4>
+    <p>Spring Boot + MyBatis Plus 连接 PostgreSQL</p>
+    <p>定义 Entity + Mapper -> 自动 CRUD -> 数据持久化</p>
+  </div>
+</div>
+
+<h2>第一步：安装 PostgreSQL</h2>
+
+<div class="steps-container">
+
+<div class="step">
+  <h3>下载并安装</h3>
+  <p>打开 <a href="https://www.postgresql.org/download/windows/" target="_blank">PostgreSQL Windows 下载页</a>，下载 EDB 安装包。运行安装程序，关键步骤：</p>
+  <ol>
+    <li>选择安装目录（默认即可）</li>
+    <li>选择组件：保留 <strong>PostgreSQL Server</strong> 和 <strong>Command Line Tools</strong>，pgAdmin 4 可以取消勾选（我们用 DBeaver 替代）</li>
+    <li><strong>设置 postgres 用户密码 -- 务必记住！</strong>（比如 <code>123456</code>）</li>
+    <li>端口保持默认 <code>5432</code></li>
+  </ol>
+  <div class="callout callout-warn">
+    <p class="callout-title">关键</p>
+    <p>安装时设置的 postgres 密码后面配置数据库连接要用。务必记住！</p>
+  </div>
+</div>
+
+<div class="step">
+  <h3>安装 DBeaver（数据库管理工具）</h3>
+  <p>实际工作中不用 pgAdmin，用 <strong>DBeaver</strong> -- 免费开源，支持所有主流数据库，国内开发团队常用。</p>
+  <p>打开 <a href="https://dbeaver.io/download/" target="_blank">DBeaver 下载页</a>，下载 Windows 版安装包（<code>.exe</code>），一路下一步安装即可。</p>
+  <p>安装后打开 DBeaver，点击左上角<strong>插头图标</strong>（或 Database -> New Connection），连接 PostgreSQL：</p>
+  <table>
+    <tr>
+      <th>参数</th>
+      <th>值</th>
+    </tr>
+    <tr>
+      <td>Host</td>
+      <td><code>localhost</code></td>
+    </tr>
+    <tr>
+      <td>Port</td>
+      <td><code>5432</code></td>
+    </tr>
+    <tr>
+      <td>Database</td>
+      <td><code>postgres</code>（默认数据库，先连上再说）</td>
+    </tr>
+    <tr>
+      <td>Username</td>
+      <td><code>postgres</code></td>
+    </tr>
+    <tr>
+      <td>Password</td>
+      <td>你安装时设置的密码</td>
+    </tr>
+  </table>
+  <p>点击"测试连接"（Test Connection），第一次会提示下载 PostgreSQL 驱动，点下载即可。测试成功后点"完成"。</p>
+</div>
+
+</div>
+
+<h2>第二步：创建数据库和表</h2>
+
+<div class="steps-container">
+
+<div class="step">
+  <h3>创建数据库</h3>
+  <p>在 DBeaver 左侧右键连接 -> <strong>Create New Database</strong>，名称填 <code>mydb</code>，点击确定。</p>
+  <p>或者直接用 SQL：在 DBeaver 中按 <code>Ctrl + ]</code> 打开 SQL Editor，执行：</p>
+  <div class="terminal">
+CREATE DATABASE mydb;
+  </div>
+</div>
+
+<div class="step">
+  <h3>创建 users 表</h3>
+  <p>在 DBeaver 中切换到 <code>mydb</code> 数据库（左侧双击），按 <code>Ctrl + ]</code> 打开 SQL Editor，执行：</p>
+  <pre><code>CREATE TABLE users (
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(200)
+);
+
+INSERT INTO users (name, email) VALUES
+    ('Vue', 'vue@dev.com'),
+    ('React', 'react@dev.com'),
+    ('Angular', 'angular@dev.com');</code></pre>
+  <table>
+    <tr>
+      <th>SQL</th>
+      <th>说明</th>
+    </tr>
+    <tr>
+      <td><code>BIGSERIAL</code></td>
+      <td>PostgreSQL 自增整数主键（类似 MySQL 的 <code>BIGINT AUTO_INCREMENT</code>）</td>
+    </tr>
+    <tr>
+      <td><code>VARCHAR(100)</code></td>
+      <td>变长字符串，最大 100 字符</td>
+    </tr>
+    <tr>
+      <td><code>PRIMARY KEY</code></td>
+      <td>主键，唯一标识每行记录</td>
+    </tr>
+  </table>
+</div>
+
+</div>
+
+<h2>第三步：添加 Maven 依赖</h2>
+
+<p>在 <code>pom.xml</code> 的 <code>&lt;dependencies&gt;</code> 中添加：</p>
+
+<pre><code>&lt;!-- MyBatis Plus（Spring Boot 4.x 版本）--&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;com.baomidou&lt;/groupId&gt;
+    &lt;artifactId&gt;mybatis-plus-spring-boot4-starter&lt;/artifactId&gt;
+    &lt;version&gt;3.5.17&lt;/version&gt;
+&lt;/dependency&gt;
+
+&lt;!-- PostgreSQL 驱动 --&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;org.postgresql&lt;/groupId&gt;
+    &lt;artifactId&gt;postgresql&lt;/artifactId&gt;
+&lt;/dependency&gt;</code></pre>
+
+<div class="callout callout-info">
+  <p class="callout-title">关于版本号</p>
+  <p>MyBatis Plus 的 starter 与 Spring Boot 大版本<strong>一一对应</strong>，选错会启动报错。到 <a href="https://baomidou.com/getting-started/install/" target="_blank">官方安装文档</a> 查看最新版本。PostgreSQL 驱动版本由 Spring Boot 自动管理，不需要写 <code>&lt;version&gt;</code>。</p>
+</div>
+
+<div class="callout callout-jdk8">
+  <p class="callout-title">JDK 8 / Spring Boot 2.x</p>
+  <p>MyBatis Plus 为不同的 Spring Boot 大版本提供了不同的 starter，API 用法完全相同：</p>
+  <table>
+    <tr>
+      <th>Spring Boot</th>
+      <th>JDK 要求</th>
+      <th>artifactId</th>
+    </tr>
+    <tr>
+      <td>4.x</td>
+      <td>JDK 17+</td>
+      <td><code>mybatis-plus-spring-boot4-starter</code></td>
+    </tr>
+    <tr>
+      <td>3.x</td>
+      <td>JDK 17+</td>
+      <td><code>mybatis-plus-spring-boot3-starter</code></td>
+    </tr>
+    <tr>
+      <td>2.7.x</td>
+      <td>JDK 8</td>
+      <td><code>mybatis-plus-boot-starter</code></td>
+    </tr>
+  </table>
+  <p>三者版本号统一（如 3.5.17），只是 artifactId 不同。</p>
+</div>
+
+<h2>第四步：配置数据库连接</h2>
+
+<p>将 <code>src/main/resources/application.properties</code> 重命名为 <code>application.yml</code>（<strong>删除原 properties 文件</strong>，否则会覆盖 yml），写入：</p>
+
+<pre><code>spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/mydb
+    username: postgres
+    password: 123456  # 换成你安装时设置的密码
+    driver-class-name: org.postgresql.Driver
+
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    map-underscore-to-camel-case: true</code></pre>
+
+<table>
+  <tr>
+    <th>配置项</th>
+    <th>说明</th>
+  </tr>
+  <tr>
+    <td><code>url</code></td>
+    <td>数据库连接地址：<code>jdbc:postgresql://主机:端口/库名</code></td>
+  </tr>
+  <tr>
+    <td><code>log-impl: StdOutImpl</code></td>
+    <td>控制台打印 SQL -- 学习阶段必备，能看到 MyBatis Plus 生成了什么 SQL</td>
+  </tr>
+  <tr>
+    <td><code>map-underscore-to-camel-case</code></td>
+    <td>下划线转驼峰：数据库 <code>user_name</code> -> Java <code>userName</code></td>
+  </tr>
+</table>
+
+<h2>第五步：创建 User Entity</h2>
+
+<p>上一课用 <code>record</code> 定义 User。但 MyBatis Plus 需要<strong>无参构造器</strong>和 <strong>setter</strong> 来填充数据 -- record 两者都没有。所以数据库 Entity 必须用普通类。</p>
+
+<div class="callout callout-jdk8">
+  <p class="callout-title">JDK 8 兼容</p>
+  <p>本节 Entity 代码使用普通类 + getter/setter，<strong>完全兼容 JDK 8</strong>。MyBatis Plus 的要求恰好与 JDK 8 一致 -- 不存在兼容性问题。</p>
+</div>
+
+<p>将 <code>User.java</code> 替换为：</p>
+
+<pre><code>package com.yourname.demo;
+
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+
+@TableName("users")  // 映射到 users 表
+public class User {
+
+    @TableId(type = IdType.AUTO)  // 主键，自增
+    private Long id;
+    private String name;
+    private String email;
+
+    public User() {}  // 无参构造器（MyBatis Plus 必需）
+
+    public User(Long id, String name, String email) {
+        this.id = id;
+        this.name = name;
+        this.email = email;
+    }
+
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
+
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
+}</code></pre>
+
+<table>
+  <tr>
+    <th>注解</th>
+    <th>Prisma 类比</th>
+    <th>说明</th>
+  </tr>
+  <tr>
+    <td><code>@TableName("users")</code></td>
+    <td><code>@@map("users")</code></td>
+    <td>类映射到 <code>users</code> 表</td>
+  </tr>
+  <tr>
+    <td><code>@TableId(type = IdType.AUTO)</code></td>
+    <td><code>@id @default(autoincrement())</code></td>
+    <td>主键自增，插入时不需手动设置 id</td>
+  </tr>
+  <tr>
+    <td>无参构造器 + setter</td>
+    <td>-</td>
+    <td>MyBatis Plus 查到数据后 <code>new User()</code> 再逐个 setter。没有这些会报错</td>
+  </tr>
+</table>
+
+<div class="callout callout-info">
+  <p class="callout-title">为什么 record 不行？</p>
+  <p>record 的字段是 <code>final</code> 的（没有 setter），也没有无参构造器。所有 Java ORM 框架（MyBatis Plus、JPA/Hibernate）都依赖无参构造 + setter 填充数据。<strong>数据库 Entity 必须用普通类</strong>，这是 Java 后端通用约定。</p>
+</div>
+
+<h2>第六步：创建 UserMapper</h2>
+
+<p>新建 <code>UserMapper.java</code>：</p>
+
+<pre><code>package com.yourname.demo;
+
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+
+public interface UserMapper extends BaseMapper&lt;User&gt; {
+    // 空的！继承 BaseMapper 就自动有了 CRUD
+}</code></pre>
+
+<p>在主启动类上加 <code>@MapperScan</code>：</p>
+
+<pre><code>@SpringBootApplication
+@MapperScan("com.yourname.demo")  // 告诉 MyBatis Plus 去哪找 Mapper
+public class DemoApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(DemoApplication.class, args);
+    }
+}</code></pre>
+
+<div class="compare-grid">
+  <div class="compare-card frontend">
+    <h4>Prisma（前端类比）</h4>
+    <pre><code>const prisma = new PrismaClient()
+// 自动就有 CRUD
+prisma.user.findMany()
+prisma.user.create({ data })
+prisma.user.delete({ where })</code></pre>
+  </div>
+  <div class="compare-card backend">
+    <h4>MyBatis Plus</h4>
+    <pre><code>interface UserMapper
+    extends BaseMapper&lt;User&gt; {}
+// 自动获得 CRUD
+userMapper.selectList(null)
+userMapper.insert(user)
+userMapper.deleteById(id)</code></pre>
+  </div>
+</div>
+
+<p>BaseMapper 自动提供的方法（完整列表见 <a href="../reference/mybatis-plus-cheatsheet.html">MyBatis Plus 速查表</a>）：</p>
+
+<table>
+  <tr>
+    <th>方法</th>
+    <th>Prisma 类比</th>
+    <th>作用</th>
+  </tr>
+  <tr>
+    <td><code>insert(user)</code></td>
+    <td><code>prisma.user.create()</code></td>
+    <td>插入一条记录</td>
+  </tr>
+  <tr>
+    <td><code>deleteById(id)</code></td>
+    <td><code>prisma.user.delete()</code></td>
+    <td>按 ID 删除</td>
+  </tr>
+  <tr>
+    <td><code>updateById(user)</code></td>
+    <td><code>prisma.user.update()</code></td>
+    <td>按 ID 更新</td>
+  </tr>
+  <tr>
+    <td><code>selectById(id)</code></td>
+    <td><code>prisma.user.findUnique()</code></td>
+    <td>按 ID 查询单条</td>
+  </tr>
+  <tr>
+    <td><code>selectList(null)</code></td>
+    <td><code>prisma.user.findMany()</code></td>
+    <td>查询全部（null = 无条件）</td>
+  </tr>
+</table>
+
+<h2>第七步：重构 UserController</h2>
+
+<p>把内存 List 版本换成数据库版本。替换 <code>UserController.java</code>：</p>
+
+<pre><code>package com.yourname.demo;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+import java.util.List;
+
+@RestController
+@RequestMapping("/users")
+public class UserController {
+
+    @Autowired  // Spring 自动注入 UserMapper（依赖注入）
+    private UserMapper userMapper;
+
+    @GetMapping
+    public List&lt;User&gt; getAll() {
+        return userMapper.selectList(null);
+    }
+
+    @GetMapping("/{id}")
+    public User getById(@PathVariable Long id) {
+        return userMapper.selectById(id);
+    }
+
+    @PostMapping
+    public User create(@RequestBody User user) {
+        userMapper.insert(user);
+        return user;  // insert 后 user.id 会被自动回填
+    }
+
+    @DeleteMapping("/{id}")
+    public String delete(@PathVariable Long id) {
+        userMapper.deleteById(id);
+        return "Deleted user " + id;
+    }
+}</code></pre>
+
+<table>
+  <tr>
+    <th>变化</th>
+    <th>之前（内存版）</th>
+    <th>现在（数据库版）</th>
+  </tr>
+  <tr>
+    <td>数据存储</td>
+    <td><code>List&lt;User&gt; users</code></td>
+    <td>PostgreSQL <code>users</code> 表</td>
+  </tr>
+  <tr>
+    <td>获取全部</td>
+    <td><code>return users</code></td>
+    <td><code>userMapper.selectList(null)</code></td>
+  </tr>
+  <tr>
+    <td>获取单个</td>
+    <td><code>users.stream().filter(...)</code></td>
+    <td><code>userMapper.selectById(id)</code></td>
+  </tr>
+  <tr>
+    <td>创建</td>
+    <td><code>users.add(user)</code></td>
+    <td><code>userMapper.insert(user)</code></td>
+  </tr>
+  <tr>
+    <td>删除</td>
+    <td><code>users.removeIf(...)</code></td>
+    <td><code>userMapper.deleteById(id)</code></td>
+  </tr>
+</table>
+
+<div class="callout callout-tip">
+  <p class="callout-title">@Autowired 是什么？</p>
+  <p><code>@Autowired</code> 让 Spring 自动创建并注入 <code>UserMapper</code> 实例。不需要 <code>new UserMapper()</code>，相当于 Vue 的 <code>inject()</code> -- 你声明"我需要 UserMapper"，框架自动给你。</p>
+</div>
+
+<h2>第八步：运行并测试</h2>
+
+<div class="steps-container">
+
+<div class="step">
+  <h3>启动项目</h3>
+  <p>运行 <code>DemoApplication</code>。配置正确的话控制台不会报错。</p>
+  <div class="callout callout-warn">
+    <p class="callout-title">常见错误</p>
+    <p><strong>连接失败</strong>：检查 PostgreSQL 服务是否启动、密码是否正确。</p>
+    <p><strong>Mapper 未找到</strong>：确保主启动类加了 <code>@MapperScan("com.yourname.demo")</code>。</p>
+  </div>
+</div>
+
+<div class="step">
+  <h3>测试 GET 获取所有用户</h3>
+  <p>浏览器访问 <a href="http://localhost:8080/users" target="_blank">http://localhost:8080/users</a>：</p>
+  <pre><code>[{"id":1,"name":"Vue","email":"vue@dev.com"},
+ {"id":2,"name":"React","email":"react@dev.com"},
+ {"id":3,"name":"Angular","email":"angular@dev.com"}]</code></pre>
+  <p>数据来自数据库！控制台会打印 MyBatis Plus 生成的 SQL：</p>
+  <div class="terminal">
+<span class="output">==>  Preparing: SELECT id,name,email FROM users
+==> Parameters:
+&lt;==      Total: 3</span>
+  </div>
+</div>
+
+<div class="step">
+  <h3>测试 POST 创建用户</h3>
+  <pre><code>POST http://localhost:8080/users
+Content-Type: application/json
+
+{"name":"Svelte","email":"svelte@dev.com"}</code></pre>
+  <p>响应：</p>
+  <pre><code>{"id":4,"name":"Svelte","email":"svelte@dev.com"}</code></pre>
+  <p>请求体中<strong>不需要传 id</strong>（数据库自增）。insert 后 MyBatis Plus 会把自增 id 回填到 user 对象中。</p>
+</div>
+
+<div class="step">
+  <h3>重启验证持久化</h3>
+  <p><strong>重启 Spring Boot 应用</strong>，再次访问 <code>GET /users</code>。Svelte 还在！数据已持久化到 PostgreSQL，不再随重启丢失。</p>
+</div>
+
+</div>
+
+<h2>架构总览</h2>
+
+<pre><code>浏览器 / Vue3 前端
+       │ HTTP 请求
+       ▼
+┌─────────────────────┐
+│  UserController     │  ← 处理 HTTP 请求
+│  @RestController    │
+└────────┬────────────┘
+         │ 调用
+         ▼
+┌─────────────────────┐
+│  UserMapper         │  ← 数据访问层
+│  extends BaseMapper │     自动生成 SQL
+└────────┬────────────┘
+         │ SQL
+         ▼
+┌─────────────────────┐
+│  PostgreSQL         │  ← 数据库
+│  users 表           │
+└─────────────────────┘</code></pre>
+
+<p>这就是后端最经典的三层架构：Controller -> Mapper -> Database。你在 Vue3 前端用 axios 调用的接口，背后就是这个结构。</p>
+
+<div class="quiz">
+  <h3>小测验</h3>
+  <p class="quiz-question">继承 BaseMapper 后自动获得了什么？</p>
+  <ul class="quiz-options">
+    <li class="quiz-option" onclick="checkAnswer(this, false)">免手写 CSS 的页面样式</li>
+    <li class="quiz-option" onclick="checkAnswer(this, true)">免手写 SQL 的增删改查</li>
+    <li class="quiz-option" onclick="checkAnswer(this, false)">免手写 JS 的交互逻辑</li>
+    <li class="quiz-option" onclick="checkAnswer(this, false)">免手写 HTML 的标签结构</li>
+  </ul>
+  <div class="quiz-feedback" id="quiz-feedback"></div>
+</div>
+
+<div class="quiz">
+  <h3>小测验</h3>
+  <p class="quiz-question">为什么数据库 Entity 不能用 record？</p>
+  <ul class="quiz-options">
+    <li class="quiz-option" onclick="checkAnswer2(this, false)">record 不能定义任何字段</li>
+    <li class="quiz-option" onclick="checkAnswer2(this, true)">record 缺少无参构造方法</li>
+    <li class="quiz-option" onclick="checkAnswer2(this, false)">record 无法被序列化处理</li>
+    <li class="quiz-option" onclick="checkAnswer2(this, false)">record 不支持继承扩展</li>
+  </ul>
+  <div class="quiz-feedback" id="quiz-feedback-2"></div>
+</div>
+
+<div class="quiz">
+  <h3>小测验</h3>
+  <p class="quiz-question">selectList(null) 中的 null 表示什么？</p>
+  <ul class="quiz-options">
+    <li class="quiz-option" onclick="checkAnswer3(this, true)">无条件查询返回所有行</li>
+    <li class="quiz-option" onclick="checkAnswer3(this, false)">数据库连接对象为空值</li>
+    <li class="quiz-option" onclick="checkAnswer3(this, false)">查询结果列表返回空值</li>
+    <li class="quiz-option" onclick="checkAnswer3(this, false)">SQL 语句存在空值错误</li>
+  </ul>
+  <div class="quiz-feedback" id="quiz-feedback-3"></div>
+</div>
+
+<div class="callout callout-tip">
+  <p class="callout-title">完成本课后</p>
+  <p>你的 API 已经连上了真正的数据库！Controller -> Mapper -> PostgreSQL 三层架构是 Java 后端的核心模式。下一课我们将学习 MyBatis Plus 的条件构造器（QueryWrapper），实现灵活的条件查询和分页。遇到任何问题随时问我！</p>
+</div>
+
+<h2>推荐阅读</h2>
+<p>主资源：<a href="https://baomidou.com/" target="_blank">MyBatis-Plus 官方文档</a> - 快速开始、配置、CRUD 接口</p>
+<p>参考：<a href="../reference/mybatis-plus-cheatsheet.html">MyBatis Plus 速查表</a> | <a href="../reference/glossary.html">术语表</a></p>
+
+<div class="lesson-nav">
+  <a href="0005-path-params-and-dto.html"><- 上一课：路径参数与 DTO</a>
+  <a href="0007-query-wrapper.html">下一课：条件构造器与分页查询 -></a>
+</div>
+
+<div class="footer">
+  <p>有任何不清楚的地方？直接问我！我是你的 Java 后端老师，随时帮你解决疑问。</p>
+</div>
+
+<script>
+function checkAnswer(el, isCorrect) {
+  var options = el.parentNode.querySelectorAll('.quiz-option');
+  var feedback = document.getElementById('quiz-feedback');
+  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
+  if (isCorrect) {
+    el.classList.add('correct');
+    feedback.className = 'quiz-feedback show correct';
+    feedback.textContent = '正确！继承 BaseMapper 后自动获得 insert、deleteById、updateById、selectById、selectList 等 CRUD 方法，无需手写 SQL。就像 Prisma Client 自动生成 CRUD 一样。';
+  } else {
+    el.classList.add('incorrect');
+    feedback.className = 'quiz-feedback show incorrect';
+    feedback.textContent = '不对。BaseMapper 是数据层工具，和前端 CSS/JS/HTML 无关。它自动提供的是数据库增删改查方法。';
+  }
+}
+
+function checkAnswer2(el, isCorrect) {
+  var options = el.parentNode.querySelectorAll('.quiz-option');
+  var feedback = document.getElementById('quiz-feedback-2');
+  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
+  if (isCorrect) {
+    el.classList.add('correct');
+    feedback.className = 'quiz-feedback show correct';
+    feedback.textContent = '正确！record 没有无参构造器，也没有 setter。MyBatis Plus 需要先 new User() 再通过 setter 填充字段，所以 Entity 必须用普通类。这是所有 Java ORM 框架的通用要求。';
+  } else {
+    el.classList.add('incorrect');
+    feedback.className = 'quiz-feedback show incorrect';
+    feedback.textContent = '不对。record 可以定义字段，也能被序列化。问题是它没有无参构造器和 setter，ORM 框架无法通过这些方法填充数据库查询结果。';
+  }
+}
+
+function checkAnswer3(el, isCorrect) {
+  var options = el.parentNode.querySelectorAll('.quiz-option');
+  var feedback = document.getElementById('quiz-feedback-3');
+  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
+  if (isCorrect) {
+    el.classList.add('correct');
+    feedback.className = 'quiz-feedback show correct';
+    feedback.textContent = '正确！selectList(null) 中 null 表示没有查询条件，等价于 SELECT * FROM users，返回全部记录。传入 QueryWrapper 可以添加 WHERE 条件，下一课会学。';
+  } else {
+    el.classList.add('incorrect');
+    feedback.className = 'quiz-feedback show incorrect';
+    feedback.textContent = '不对。null 不是指连接为空或结果为空，它表示查询条件为空 -- 即不带 WHERE 条件，查询全部数据。';
+  }
+}
+</script>
+
+</body>
+</html>

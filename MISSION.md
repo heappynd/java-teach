@@ -9,9 +9,10 @@
 - 能在 Windows 上独立搭建 Java 开发环境（JDK + Maven + IDE）
 - 能使用 Spring Initializr 创建 Spring Boot 项目，理解项目结构
 - 能编写 RESTful API 接口（GET/POST/PUT/DELETE），与 Vue3 前端对接
-- 能连接数据库（MySQL），实现 CRUD 操作
+- 能连接数据库（PostgreSQL），使用 MyBatis Plus 实现 CRUD 操作
 - 能理解 Maven 的依赖管理和构建流程
 - 能将后端项目部署运行，前端能成功调用 API
+- 了解 JDK 8 兼容性：课程中使用的 JDK 9+ 新特性会标注 JDK 8 替代写法
 
 ## Constraints
 

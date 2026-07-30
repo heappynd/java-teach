@@ -36,6 +36,13 @@
 4. 理解 Spring Boot 项目结构（对比前端项目）
 5. 编写第一个 REST API
 6. Java 基础语法（按需穿插）
-7. 连接数据库（MySQL + Spring Data JPA）
-8. CRUD 完整实现
+7. 连接数据库（PostgreSQL + MyBatis Plus）
+8. CRUD 完整实现（MyBatis Plus BaseMapper）
 9. 前后端联调（Vue3 + Spring Boot）
+
+## JDK 8 兼容性标注
+
+用户要求：课程中使用的 JDK 9+ 特性需标注 JDK 8 不支持，并给出 JDK 8 替代写法。
+已在以下课程中标注：
+- 第 4 课：`Map.of()`（JDK 9+）-> JDK 8 用 `HashMap` + `put()`
+- 第 5 课：`record`（JDK 14+）-> JDK 8 用普通类 + Lombok；`List.of()`（JDK 9+）-> JDK 8 用 `Arrays.asList()`

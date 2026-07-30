@@ -164,6 +164,16 @@ tr:nth-child(even) {
   border-color: #3b82f6;
 }
 
+.callout-jdk8 {
+  background: #fff7ed;
+  border-color: #ea580c;
+}
+
+.callout-jdk8 .callout-title::before {
+  content: "JDK 8 \26A0 ";
+  color: #ea580c;
+}
+
 .callout-title {
   font-weight: 600;
   margin-bottom: 0.3rem;
