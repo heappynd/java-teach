@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>第 7 课：条件构造器与分页查询 - Java 后端学习</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<h1>第 7 课：条件构造器与分页查询</h1>
+<p class="lesson-meta">预计用时：35 分钟 | 难度：进阶 | 前置知识：<a href="0006-connect-postgresql.html">第 6 课 连接 PostgreSQL + MyBatis Plus</a></p>
+
+<h2>目标：让 API 支持搜索、更新和分页</h2>
+
+<p>上一课的 API 能增删查，但还缺三样东西：</p>
+<ul>
+  <li><strong>更新</strong>（PUT）-- CRUD 还差一个 U</li>
+  <li><strong>条件搜索</strong> -- 用户输入"Vu"能搜到 Vue</li>
+  <li><strong>分页</strong> -- 数据多了不能一次全返回</li>
+</ul>
+<p>这节课一次性补齐。你将学会 <strong>LambdaQueryWrapper</strong>（条件构造器）和 <strong>分页插件</strong>，这两个是实际开发中天天用的核心技能。</p>
+
+<div class="compare-grid">
+  <div class="compare-card frontend">
+    <h4>前端（你已熟悉）</h4>
+    <p>axios.get('/users', { params: { page: 1, size: 10, name: 'Vu' } })</p>
+    <p>后端返回 { records: [...], total: 16 }</p>
+  </div>
+  <div class="compare-card backend">
+    <h4>后端（今天学的）</h4>
+    <p>GET /users?page=1&amp;size=10&amp;name=Vu</p>
+    <p>用 LambdaQueryWrapper + Page 返回分页结果</p>
+  </div>
+</div>
+
+<h2>第一步：补全 CRUD -- 添加更新接口</h2>
+
+<p>上一课实现了 GET、POST、DELETE，还差 PUT（更新）。在 <code>UserController.java</code> 中添加：</p>
+
+<pre><code>@PutMapping("/{id}")
+public User update(@PathVariable Long id, @RequestBody User user) {
+    user.setId(id);
+    userMapper.updateById(user);
+    return userMapper.selectById(id);
+}</code></pre>
+
+<table>
+  <tr>
+    <th>方法</th>
+    <th>Prisma 类比</th>
+    <th>生成的 SQL</th>
+  </tr>
+  <tr>
+    <td><code>updateById(user)</code></td>
+    <td><code>prisma.user.update()</code></td>
+    <td><code>UPDATE users SET name=?, email=? WHERE id=?</code></td>
+  </tr>
+</table>
+
+<div class="callout callout-tip">
+  <p class="callout-title">null 字段自动跳过</p>
+  <p><code>updateById</code> 默认<strong>只更新非 null 字段</strong>。如果请求体只有 <code>{"name":"NewName"}</code>，email 不会被覆盖为 null -- 这叫"选择性更新"，相当于 Prisma 的 <code>update({ data: { name } })</code>，不传的字段不动。</p>
+</div>
+
+<p>测试更新接口：</p>
+<pre><code>PUT http://localhost:8080/users/1
+Content-Type: application/json
+
+{"name":"Vue 4","email":"vue4@dev.com"}</code></pre>
+
+<p>响应：</p>
+<pre><code>{"id":1,"name":"Vue 4","email":"vue4@dev.com"}</code></pre>
+
+<p>现在 CRUD 完整了！</p>
+
+<table>
+  <tr>
+    <th>HTTP 方法</th>
+    <th>路径</th>
+    <th>BaseMapper 方法</th>
+    <th>操作</th>
+  </tr>
+  <tr>
+    <td>GET</td>
+    <td>/users</td>
+    <td>selectList / selectPage</td>
+    <td>查询列表</td>
+  </tr>
+  <tr>
+    <td>GET</td>
+    <td>/users/{id}</td>
+    <td>selectById</td>
+    <td>查询单条</td>
+  </tr>
+  <tr>
+    <td>POST</td>
+    <td>/users</td>
+    <td>insert</td>
+    <td>创建</td>
+  </tr>
+  <tr>
+    <td>PUT</td>
+    <td>/users/{id}</td>
+    <td>updateById</td>
+    <td>更新</td>
+  </tr>
+  <tr>
+    <td>DELETE</td>
+    <td>/users/{id}</td>
+    <td>deleteById</td>
+    <td>删除</td>
+  </tr>
+</table>
+
+<h2>第二步：添加分页插件依赖</h2>
+
+<p>MyBatis Plus 从 3.5.9 起，分页插件 <code>PaginationInnerInterceptor</code> 被拆分为独立依赖。需要额外引入 <code>mybatis-plus-jsqlparser</code>。</p>
+
+<p>在 <code>pom.xml</code> 中添加 BOM（统一版本管理）和分页依赖：</p>
+
+<pre><code>&lt;!-- 1. 在 &lt;dependencies&gt; 之前添加 BOM --&gt;
+&lt;dependencyManagement&gt;
+    &lt;dependencies&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;com.baomidou&lt;/groupId&gt;
+            &lt;artifactId&gt;mybatis-plus-bom&lt;/artifactId&gt;
+            &lt;version&gt;3.5.17&lt;/version&gt;
+            &lt;type&gt;pom&lt;/type&gt;
+            &lt;scope&gt;import&lt;/scope&gt;
+        &lt;/dependency&gt;
+    &lt;/dependencies&gt;
+&lt;/dependencyManagement&gt;
+
+&lt;!-- 2. 在 &lt;dependencies&gt; 中添加分页插件 --&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;com.baomidou&lt;/groupId&gt;
+    &lt;artifactId&gt;mybatis-plus-jsqlparser&lt;/artifactId&gt;
+&lt;/dependency&gt;</code></pre>
+
+<div class="callout callout-info">
+  <p class="callout-title">BOM 是什么？</p>
+  <p>BOM（Bill of Materials）是 Maven 的版本管理清单。引入 BOM 后，所有 MyBatis Plus 相关依赖的版本由 BOM 统一管理，不需要手动写 <code>&lt;version&gt;</code>。相当于前端 <code>package-lock.json</code> 锁定版本的作用。你之前在 lesson 6 添加的 <code>mybatis-plus-spring-boot4-starter</code> 可以删掉 <code>&lt;version&gt;</code> 标签，由 BOM 接管。</p>
+</div>
+
+<div class="callout callout-jdk8">
+  <p class="callout-title">Spring Boot 2.x / JDK 8</p>
+  <p>JDK 8 需要使用 <code>mybatis-plus-jsqlparser-4.9</code>（因为 jsqlparser 5.0+ 要求 JDK 11+）：</p>
+  <pre><code>&lt;dependency&gt;
+    &lt;groupId&gt;com.baomidou&lt;/groupId&gt;
+    &lt;artifactId&gt;mybatis-plus-jsqlparser-4.9&lt;/artifactId&gt;
+&lt;/dependency&gt;</code></pre>
+  <p>BOM 版本同样使用 3.5.17，BOM 会自动选择与 JDK 8 兼容的版本。</p>
+</div>
+
+<h2>第三步：配置分页拦截器</h2>
+
+<p>新建配置类 <code>MybatisPlusConfig.java</code>（与 <code>DemoApplication.java</code> 同级目录）：</p>
+
+<pre><code>package com.yourname.demo;
+
+import com.baomidou.mybatisplus.annotation.DbType;
+import com.baomidou.mybatisplus.extension.plugins.MybatisPlusInterceptor;
+import com.baomidou.mybatisplus.extension.plugins.inner.PaginationInnerInterceptor;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class MybatisPlusConfig {
+
+    @Bean
+    public MybatisPlusInterceptor mybatisPlusInterceptor() {
+        MybatisPlusInterceptor interceptor = new MybatisPlusInterceptor();
+        interceptor.addInnerInterceptor(
+            new PaginationInnerInterceptor(DbType.POSTGRE_SQL)
+        );
+        return interceptor;
+    }
+}</code></pre>
+
+<table>
+  <tr>
+    <th>组成部分</th>
+    <th>说明</th>
+  </tr>
+  <tr>
+    <td><code>@Configuration</code></td>
+    <td>标记为配置类，Spring 启动时自动加载</td>
+  </tr>
+  <tr>
+    <td><code>@Bean</code></td>
+    <td>将返回值注册为 Spring Bean，相当于告诉框架"这里有一个你需要管理的对象"</td>
+  </tr>
+  <tr>
+    <td><code>MybatisPlusInterceptor</code></td>
+    <td>MyBatis Plus 拦截器容器，可以挂载多个内部拦截器</td>
+  </tr>
+  <tr>
+    <td><code>PaginationInnerInterceptor</code></td>
+    <td>分页拦截器，自动给 SQL 拼接 <code>LIMIT</code> 和 <code>OFFSET</code></td>
+  </tr>
+  <tr>
+    <td><code>DbType.POSTGRE_SQL</code></td>
+    <td>告诉拦截器用 PostgreSQL 方言生成分页 SQL</td>
+  </tr>
+</table>
+
+<div class="callout callout-tip">
+  <p class="callout-title">拦截器做了什么？</p>
+  <p>当你调用 <code>selectPage()</code> 时，拦截器会做两件事：<br>
+  1. 执行 <code>SELECT COUNT(*)</code> 获取总记录数<br>
+  2. 给原 SQL 拼接 <code>LIMIT 10 OFFSET 0</code> 只取当前页数据<br>
+  这一切都是自动的 -- 你只需要传 <code>Page</code> 对象。</p>
+</div>
+
+<h2>第四步：LambdaQueryWrapper 条件构造器</h2>
+
+<p>上一课的 <code>selectList(null)</code> 查全部。要加 <code>WHERE</code> 条件，需要传入 <strong>QueryWrapper</strong>。MyBatis Plus 提供两种：</p>
+
+<div class="compare-grid">
+  <div class="compare-card frontend">
+    <h4>QueryWrapper（字符串字段名）</h4>
+    <pre><code>QueryWrapper&lt;User&gt; w = new QueryWrapper&lt;&gt;();
+w.eq("name", "Vue");</code></pre>
+    <p>字段名是字符串，写错不报错，运行时才炸</p>
+  </div>
+  <div class="compare-card backend">
+    <h4>LambdaQueryWrapper（推荐）</h4>
+    <pre><code>LambdaQueryWrapper&lt;User&gt; w =
+    new LambdaQueryWrapper&lt;&gt;();
+w.eq(User::getName, "Vue");</code></pre>
+    <p>方法引用，编译时检查，重构安全</p>
+  </div>
+</div>
+
+<p><code>User::getName</code> 是 Java 8 的<strong>方法引用</strong>，相当于告诉 MyBatis Plus"用 User 的 name 字段"。MyBatis Plus 通过反射自动推导出数据库列名 <code>name</code>。</p>
+
+<h3>常用条件方法</h3>
+
+<table>
+  <tr>
+    <th>Wrapper 方法</th>
+    <th>SQL 等价</th>
+    <th>Prisma 类比</th>
+  </tr>
+  <tr>
+    <td><code>eq(User::getName, "Vue")</code></td>
+    <td><code>name = 'Vue'</code></td>
+    <td><code>where: { name: "Vue" }</code></td>
+  </tr>
+  <tr>
+    <td><code>ne(User::getName, "Vue")</code></td>
+    <td><code>name != 'Vue'</code></td>
+    <td><code>where: { NOT: { name: "Vue" } }</code></td>
+  </tr>
+  <tr>
+    <td><code>gt(User::getId, 5)</code></td>
+    <td><code>id &gt; 5</code></td>
+    <td><code>where: { id: { gt: 5 } }</code></td>
+  </tr>
+  <tr>
+    <td><code>ge(User::getId, 5)</code></td>
+    <td><code>id &gt;= 5</code></td>
+    <td><code>where: { id: { gte: 5 } }</code></td>
+  </tr>
+  <tr>
+    <td><code>lt(User::getId, 10)</code></td>
+    <td><code>id &lt; 10</code></td>
+    <td><code>where: { id: { lt: 10 } }</code></td>
+  </tr>
+  <tr>
+    <td><code>le(User::getId, 10)</code></td>
+    <td><code>id &lt;= 10</code></td>
+    <td><code>where: { id: { lte: 10 } }</code></td>
+  </tr>
+  <tr>
+    <td><code>like(User::getName, "Vu")</code></td>
+    <td><code>name LIKE '%Vu%'</code></td>
+    <td><code>where: { name: { contains: "Vu" } }</code></td>
+  </tr>
+  <tr>
+    <td><code>likeRight(User::getName, "Vu")</code></td>
+    <td><code>name LIKE 'Vu%'</code></td>
+    <td>前缀匹配（以 Vu 开头）</td>
+  </tr>
+  <tr>
+    <td><code>isNull(User::getEmail)</code></td>
+    <td><code>email IS NULL</code></td>
+    <td><code>where: { email: null }</code></td>
+  </tr>
+  <tr>
+    <td><code>orderByDesc(User::getId)</code></td>
+    <td><code>ORDER BY id DESC</code></td>
+    <td><code>orderBy: { id: 'desc' }</code></td>
+  </tr>
+</table>
+
+<h3>链式调用 -- 多条件组合</h3>
+
+<p>Wrapper 方法返回 <code>this</code>，可以链式拼接：</p>
+
+<pre><code>LambdaQueryWrapper&lt;User&gt; wrapper = new LambdaQueryWrapper&lt;&gt;();
+wrapper.like(User::getName, "e")    // name LIKE '%e%'
+       .gt(User::getId, 1)          // AND id > 1
+       .orderByDesc(User::getId);   // ORDER BY id DESC
+
+List&lt;User&gt; users = userMapper.selectList(wrapper);
+// SQL: SELECT id,name,email FROM users
+//      WHERE name LIKE '%e%' AND id > 1
+//      ORDER BY id DESC</code></pre>
+
+<div class="callout callout-info">
+  <p class="callout-title">条件判断写法</p>
+  <p>实际开发中，搜索参数是可选的。Wrapper 每个方法都支持第一个参数为 <code>boolean</code> 条件：</p>
+  <pre><code>wrapper.like(name != null &amp;&amp; !name.isEmpty(),
+             User::getName, name)</code></pre>
+  <p>条件为 <code>false</code> 时该 WHERE 子句不加入 SQL。比写 <code>if</code> 更简洁。</p>
+</div>
+
+<h2>第五步：重构 GET /users -- 搜索 + 分页一体</h2>
+
+<p>先往数据库多插几条数据，让分页有意义。在 DBeaver 中执行：</p>
+
+<pre><code>INSERT INTO users (name, email) VALUES
+    ('jQuery', 'jquery@dev.com'),
+    ('Backbone', 'backbone@dev.com'),
+    ('Ember', 'ember@dev.com'),
+    ('Knockout', 'knockout@dev.com'),
+    ('Aurelia', 'aurelia@dev.com'),
+    ('Meteor', 'meteor@dev.com'),
+    ('Polymer', 'polymer@dev.com'),
+    ('Lit', 'lit@dev.com'),
+    ('Solid', 'solid@dev.com'),
+    ('Qwik', 'qwik@dev.com'),
+    ('Alpine', 'alpine@dev.com'),
+    ('HTMX', 'htmx@dev.com');</code></pre>
+
+<p>现在有 16 条数据了。把 <code>UserController.java</code> 中的 <code>getAll()</code> 方法<strong>替换</strong>为分页搜索版：</p>
+
+<pre><code>import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+
+// ... 其他 import 不变
+
+@GetMapping
+public Page&lt;User&gt; getList(
+        @RequestParam(defaultValue = "1") long page,
+        @RequestParam(defaultValue = "10") long size,
+        @RequestParam(required = false) String name,
+        @RequestParam(required = false) String email
+) {
+    // 1. 创建分页对象：第 page 页，每页 size 条
+    Page&lt;User&gt; pageObj = new Page&lt;&gt;(page, size);
+
+    // 2. 构建查询条件
+    LambdaQueryWrapper&lt;User&gt; wrapper = new LambdaQueryWrapper&lt;&gt;();
+    wrapper.like(name != null &amp;&amp; !name.isEmpty(), User::getName, name)
+           .like(email != null &amp;&amp; !email.isEmpty(), User::getEmail, email)
+           .orderByDesc(User::getId);
+
+    // 3. 执行分页查询
+    return userMapper.selectPage(pageObj, wrapper);
+}</code></pre>
+
+<table>
+  <tr>
+    <th>参数</th>
+    <th>类型</th>
+    <th>默认值</th>
+    <th>说明</th>
+  </tr>
+  <tr>
+    <td><code>page</code></td>
+    <td>long</td>
+    <td>1</td>
+    <td>页码，从 1 开始</td>
+  </tr>
+  <tr>
+    <td><code>size</code></td>
+    <td>long</td>
+    <td>10</td>
+    <td>每页条数</td>
+  </tr>
+  <tr>
+    <td><code>name</code></td>
+    <td>String</td>
+    <td>null（可选）</td>
+    <td>按姓名模糊搜索</td>
+  </tr>
+  <tr>
+    <td><code>email</code></td>
+    <td>String</td>
+    <td>null（可选）</td>
+    <td>按邮箱模糊搜索</td>
+  </tr>
+</table>
+
+<div class="callout callout-tip">
+  <p class="callout-title">@RequestParam 详解</p>
+  <p><code>@RequestParam(defaultValue = "1")</code> -- 如果 URL 没传这个参数，用默认值 1。<br>
+  <code>@RequestParam(required = false)</code> -- 参数可选，不传时值为 <code>null</code>。<br>
+  这和 Vue3 中 <code>route.query.page ?? 1</code> 的逻辑一模一样。</p>
+</div>
+
+<h2>第六步：运行并测试</h2>
+
+<div class="steps-container">
+
+<div class="step">
+  <h3>测试分页查询</h3>
+  <p>浏览器访问 <code>http://localhost:8080/users?page=1&amp;size=5</code>：</p>
+  <pre><code>{
+  "records": [
+    {"id":16,"name":"HTMX","email":"htmx@dev.com"},
+    {"id":15,"name":"Alpine","email":"alpine@dev.com"},
+    {"id":14,"name":"Qwik","email":"qwik@dev.com"},
+    {"id":13,"name":"Solid","email":"solid@dev.com"},
+    {"id":12,"name":"Lit","email":"lit@dev.com"}
+  ],
+  "total": 16,
+  "size": 5,
+  "current": 1,
+  "pages": 4
+}</code></pre>
+  <p>控制台会打印两条 SQL：</p>
+  <div class="terminal">
+<span class="output">==>  Preparing: SELECT COUNT(*) FROM users
+==> Parameters:
+==>  Preparing: SELECT id,name,email FROM users ORDER BY id DESC LIMIT 5 OFFSET 0
+==> Parameters:</span>
+  </div>
+</div>
+
+<div class="step">
+  <h3>测试条件搜索</h3>
+  <p>访问 <code>http://localhost:8080/users?name=e&amp;size=3</code>：</p>
+  <pre><code>{
+  "records": [
+    {"id":14,"name":"Qwik","email":"qwik@dev.com"},
+    {"id":11,"name":"Aurelia","email":"aurelia@dev.com"},
+    {"id":9,"name":"Ember","email":"ember@dev.com"}
+  ],
+  "total": 6,
+  "size": 3,
+  "current": 1,
+  "pages": 2
+}</code></pre>
+  <p>名字含 "e" 的有 6 条，每页 3 条，共 2 页。</p>
+</div>
+
+<div class="step">
+  <h3>翻到第二页</h3>
+  <p>访问 <code>http://localhost:8080/users?name=e&amp;page=2&amp;size=3</code>：</p>
+  <pre><code>{
+  "records": [
+    {"id":5,"name":"Svelte","email":"svelte@dev.com"},
+    {"id":2,"name":"React","email":"react@dev.com"},
+    {"id":1,"name":"Vue 4","email":"vue4@dev.com"}
+  ],
+  "total": 6,
+  "size": 3,
+  "current": 2,
+  "pages": 2
+}</code></pre>
+</div>
+
+</div>
+
+<h2>分页响应结构详解</h2>
+
+<p><code>selectPage</code> 返回的 <code>Page&lt;User&gt;</code> 对象会被 Spring 自动转为 JSON。前端对接时关注这几个字段：</p>
+
+<table>
+  <tr>
+    <th>JSON 字段</th>
+    <th>类型</th>
+    <th>说明</th>
+    <th>Vue3 对接</th>
+  </tr>
+  <tr>
+    <td><code>records</code></td>
+    <td>数组</td>
+    <td>当前页的数据列表</td>
+    <td><code>v-for="user in res.records"</code></td>
+  </tr>
+  <tr>
+    <td><code>total</code></td>
+    <td>数字</td>
+    <td>总记录数</td>
+    <td><code>&lt;el-pagination :total="res.total"&gt;</code></td>
+  </tr>
+  <tr>
+    <td><code>current</code></td>
+    <td>数字</td>
+    <td>当前页码</td>
+    <td><code>v-model:current-page="res.current"</code></td>
+  </tr>
+  <tr>
+    <td><code>size</code></td>
+    <td>数字</td>
+    <td>每页条数</td>
+    <td><code>v-model:page-size="res.size"</code></td>
+  </tr>
+  <tr>
+    <td><code>pages</code></td>
+    <td>数字</td>
+    <td>总页数</td>
+    <td>计算翻页按钮显隐</td>
+  </tr>
+</table>
+
+<div class="compare-grid">
+  <div class="compare-card frontend">
+    <h4>Vue3 前端调用</h4>
+    <pre><code>const res = await axios.get('/users', {
+  params: { page: 1, size: 5, name: 'e' }
+})
+
+users.value = res.data.records
+total.value = res.data.total</code></pre>
+  </div>
+  <div class="compare-card backend">
+    <h4>Spring Boot 后端</h4>
+    <pre><code>@GetMapping
+public Page&lt;User&gt; getList(
+    @RequestParam(defaultValue="1") long page,
+    @RequestParam(defaultValue="10") long size,
+    @RequestParam(required=false) String name
+) {
+    // ... 自动返回
+    // { records, total, current, size, pages }
+}</code></pre>
+  </div>
+</div>
+
+<h2>完整 UserController 代码</h2>
+
+<p>到目前为止，<code>UserController.java</code> 完整代码如下：</p>
+
+<pre><code>package com.yourname.demo;
+
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+import java.util.List;
+
+@RestController
+@RequestMapping("/users")
+public class UserController {
+
+    @Autowired
+    private UserMapper userMapper;
+
+    // 搜索 + 分页
+    @GetMapping
+    public Page&lt;User&gt; getList(
+            @RequestParam(defaultValue = "1") long page,
+            @RequestParam(defaultValue = "10") long size,
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String email
+    ) {
+        Page&lt;User&gt; pageObj = new Page&lt;&gt;(page, size);
+        LambdaQueryWrapper&lt;User&gt; wrapper = new LambdaQueryWrapper&lt;&gt;();
+        wrapper.like(name != null &amp;&amp; !name.isEmpty(), User::getName, name)
+               .like(email != null &amp;&amp; !email.isEmpty(), User::getEmail, email)
+               .orderByDesc(User::getId);
+        return userMapper.selectPage(pageObj, wrapper);
+    }
+
+    // 按 ID 查询单条
+    @GetMapping("/{id}")
+    public User getById(@PathVariable Long id) {
+        return userMapper.selectById(id);
+    }
+
+    // 创建
+    @PostMapping
+    public User create(@RequestBody User user) {
+        userMapper.insert(user);
+        return user;
+    }
+
+    // 更新
+    @PutMapping("/{id}")
+    public User update(@PathVariable Long id, @RequestBody User user) {
+        user.setId(id);
+        userMapper.updateById(user);
+        return userMapper.selectById(id);
+    }
+
+    // 删除
+    @DeleteMapping("/{id}")
+    public String delete(@PathVariable Long id) {
+        userMapper.deleteById(id);
+        return "Deleted user " + id;
+    }
+}</code></pre>
+
+<h2>架构总览</h2>
+
+<pre><code>浏览器 / Vue3 前端
+  │ GET /users?page=1&size=5&name=e
+  ▼
+┌──────────────────────┐
+│  UserController      │  @RequestParam 接收参数
+│  @GetMapping getList │  构建 LambdaQueryWrapper + Page
+└────────┬─────────────┘
+         │ selectPage(page, wrapper)
+         ▼
+┌──────────────────────┐
+│  UserMapper          │  extends BaseMapper
+│  + PaginationInner   │  拦截器自动拼 LIMIT/OFFSET
+│    Interceptor       │  自动执行 COUNT(*)
+└────────┬─────────────┘
+         │ SQL
+         ▼
+┌──────────────────────┐
+│  PostgreSQL          │  SELECT ... LIMIT 5 OFFSET 0
+│  users 表 (16 条)    │  SELECT COUNT(*) FROM users
+└──────────────────────┘</code></pre>
+
+<div class="callout callout-jdk8">
+  <p class="callout-title">JDK 8 兼容性</p>
+  <p>本课使用的特性全部兼容 JDK 8：</p>
+  <ul>
+    <li>Lambda 表达式和方法引用（<code>User::getName</code>）-- JDK 8 引入</li>
+    <li><code>LambdaQueryWrapper</code>、<code>Page</code> -- MyBatis Plus 3.x 全版本支持</li>
+    <li><code>@RequestParam</code> -- Spring MVC 4+ 全版本支持</li>
+  </ul>
+  <p>唯一的 JDK 8 差异：分页插件依赖改为 <code>mybatis-plus-jsqlparser-4.9</code>。</p>
+</div>
+
+<div class="quiz">
+  <h3>小测验</h3>
+  <p class="quiz-question">LambdaQueryWrapper 相比 QueryWrapper 的主要优势是什么？</p>
+  <ul class="quiz-options">
+    <li class="quiz-option" onclick="checkAnswer(this, false)">运行速度更快且内存占用更少</li>
+    <li class="quiz-option" onclick="checkAnswer(this, true)">字段名编译时检查重构更安全</li>
+    <li class="quiz-option" onclick="checkAnswer(this, false)">支持更多种 SQL 操作和子查询</li>
+    <li class="quiz-option" onclick="checkAnswer(this, false)">不需要导入任何额外依赖包</li>
+  </ul>
+  <div class="quiz-feedback" id="quiz-feedback"></div>
+</div>
+
+<div class="quiz">
+  <h3>小测验</h3>
+  <p class="quiz-question">new Page&lt;User&gt;(2, 5) 表示什么含义？</p>
+  <ul class="quiz-options">
+    <li class="quiz-option" onclick="checkAnswer2(this, false)">查询第 2 条到第 5 条记录</li>
+    <li class="quiz-option" onclick="checkAnswer2(this, false)">每页 2 条记录共分 5 页</li>
+    <li class="quiz-option" onclick="checkAnswer2(this, true)">查询第 2 页每页 5 条记录</li>
+    <li class="quiz-option" onclick="checkAnswer2(this, false)">总共 2 页每页显示 5 条</li>
+  </ul>
+  <div class="quiz-feedback" id="quiz-feedback-2"></div>
+</div>
+
+<div class="quiz">
+  <h3>小测验</h3>
+  <p class="quiz-question">updateById(user) 如何处理 user 对象中的 null 字段？</p>
+  <ul class="quiz-options">
+    <li class="quiz-option" onclick="checkAnswer3(this, false)">将数据库对应字段更新为 NULL</li>
+    <li class="quiz-option" onclick="checkAnswer3(this, true)">跳过不更新该字段的值</li>
+    <li class="quiz-option" onclick="checkAnswer3(this, false)">抛出空指针异常并报错</li>
+    <li class="quiz-option" onclick="checkAnswer3(this, false)">自动填充默认值后再更新</li>
+  </ul>
+  <div class="quiz-feedback" id="quiz-feedback-3"></div>
+</div>
+
+<div class="callout callout-tip">
+  <p class="callout-title">完成本课后</p>
+  <p>你的 API 已经具备完整的 CRUD + 条件搜索 + 分页能力！这是后端开发中最核心的日常技能。LambdaQueryWrapper 和 Page 你会在以后的项目中反复使用。下一课我们将进行前后端联调 -- 用你的 Vue3 前端调用这个 Spring Boot 后端，跑通真正的全栈链路。遇到任何问题随时问我！</p>
+</div>
+
+<h2>推荐阅读</h2>
+<p>主资源：<a href="https://baomidou.com/guides/wrapper/" target="_blank">MyBatis-Plus 官方文档 - 条件构造器</a></p>
+<p>主资源：<a href="https://baomidou.com/plugins/pagination/" target="_blank">MyBatis-Plus 官方文档 - 分页插件</a></p>
+<p>参考：<a href="../reference/mybatis-plus-cheatsheet.html">MyBatis Plus 速查表</a> | <a href="../reference/glossary.html">术语表</a></p>
+
+<div class="lesson-nav">
+  <a href="0006-connect-postgresql.html"><- 上一课：连接 PostgreSQL + MyBatis Plus</a>
+  <a href="0008-frontend-backend-integration.html">下一课：前后端联调 -></a>
+</div>
+
+<div class="footer">
+  <p>有任何不清楚的地方？直接问我！我是你的 Java 后端老师，随时帮你解决疑问。</p>
+</div>
+
+<script>
+function checkAnswer(el, isCorrect) {
+  var options = el.parentNode.querySelectorAll('.quiz-option');
+  var feedback = document.getElementById('quiz-feedback');
+  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
+  if (isCorrect) {
+    el.classList.add('correct');
+    feedback.className = 'quiz-feedback show correct';
+    feedback.textContent = '正确！LambdaQueryWrapper 使用方法引用（User::getName）引用字段，编译时就能检查字段名是否正确。如果后续重命名字段，IDE 会提示修改，不会像字符串那样到运行时才报错。';
+  } else {
+    el.classList.add('incorrect');
+    feedback.className = 'quiz-feedback show incorrect';
+    feedback.textContent = '不对。LambdaQueryWrapper 和 QueryWrapper 支持的 SQL 操作完全相同，性能也没有差异。核心区别是字段引用方式：Lambda 用方法引用（类型安全），QueryWrapper 用字符串（容易写错）。';
+  }
+}
+
+function checkAnswer2(el, isCorrect) {
+  var options = el.parentNode.querySelectorAll('.quiz-option');
+  var feedback = document.getElementById('quiz-feedback-2');
+  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
+  if (isCorrect) {
+    el.classList.add('correct');
+    feedback.className = 'quiz-feedback show correct';
+    feedback.textContent = '正确！Page 构造器第一个参数是页码（current），第二个是每页条数（size）。new Page<>(2, 5) 表示第 2 页、每页 5 条。生成的 SQL 是 LIMIT 5 OFFSET 5（跳过前 5 条，取接下来 5 条）。';
+  } else {
+    el.classList.add('incorrect');
+    feedback.className = 'quiz-feedback show incorrect';
+    feedback.textContent = '不对。Page 的两个参数分别是当前页码和每页条数，不是记录范围或页数。new Page<>(2, 5) = 第 2 页，每页 5 条。';
+  }
+}
+
+function checkAnswer3(el, isCorrect) {
+  var options = el.parentNode.querySelectorAll('.quiz-option');
+  var feedback = document.getElementById('quiz-feedback-3');
+  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
+  if (isCorrect) {
+    el.classList.add('correct');
+    feedback.className = 'quiz-feedback show correct';
+    feedback.textContent = '正确！updateById 默认只更新非 null 字段，这叫"选择性更新"。如果请求体只有 {"name":"NewName"}，email 不会被覆盖为 null。这个行为在做 PATCH 式部分更新时非常有用。';
+  } else {
+    el.classList.add('incorrect');
+    feedback.className = 'quiz-feedback show incorrect';
+    feedback.textContent = '不对。updateById 不会把 null 字段写入数据库，也不会报错。它自动跳过 null 字段，只更新有值的字段 -- 这是默认的安全行为。';
+  }
+}
+</script>
+
+</body>
+</html>

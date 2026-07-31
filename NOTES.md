@@ -46,3 +46,4 @@
 已在以下课程中标注：
 - 第 4 课：`Map.of()`（JDK 9+）-> JDK 8 用 `HashMap` + `put()`
 - 第 5 课：`record`（JDK 14+）-> JDK 8 用普通类 + Lombok；`List.of()`（JDK 9+）-> JDK 8 用 `Arrays.asList()`
+- 第 7 课：LambdaQueryWrapper / Page / 方法引用均为 JDK 8 原生特性，无兼容性问题。分页插件依赖差异：JDK 17+ 用 `mybatis-plus-jsqlparser`，JDK 8 用 `mybatis-plus-jsqlparser-4.9`

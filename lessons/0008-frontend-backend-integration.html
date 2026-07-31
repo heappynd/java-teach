@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>第 8 课：前后端联调 - Java 后端学习</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<h1>第 8 课：前后端联调</h1>
+<p class="lesson-meta">预计用时：35 分钟 | 难度：中级 | 前置知识：<a href="0007-query-wrapper.html">第 7 课 条件构造器与分页查询</a></p>
+
+<h2>目标：Vue3 前端调用 Spring Boot API，跑通全栈</h2>
+
+<p>前 7 课你搭起了完整的后端：CRUD + 搜索 + 分页。但这节课之前，后端都是用浏览器直接访问的。现在，用你最熟悉的 <strong>Vue3</strong> 前端来调用它。</p>
+
+<p>你是 Vue3 老手，所以 Vue3 代码一笔带过。本课真正的学习重点是：<strong>跨域（CORS）</strong> -- 这是前后端分离架构中后端开发者必须掌握的知识。</p>
+
+<h2>第一步：理解跨域（CORS）</h2>
+
+<p>开发时，Vue3 跑在 <code>http://localhost:5173</code>，Spring Boot 跑在 <code>http://localhost:8080</code>。<strong>端口不同 = 源不同</strong>，浏览器会阻止前端 JS 读取后端的响应 -- 这就是 CORS（Cross-Origin Resource Sharing）问题。</p>
+
+<div class="callout callout-warn">
+  <p class="callout-title">浏览器的同源策略</p>
+  <p>浏览器规定：JS 发出的请求，如果目标与当前页面<strong>协议、域名、端口</strong>任一不同，就是"跨域"。浏览器会先检查后端是否允许跨域 -- 不允许就拦截响应。</p>
+  <p>注意：<strong>请求发出去了，后端也处理了</strong>，只是浏览器不让 JS 读结果。这不是 bug，是浏览器的安全机制。</p>
+</div>
+
+<table>
+  <tr>
+    <th>前端地址</th>
+    <th>后端地址</th>
+    <th>是否跨域</th>
+    <th>原因</th>
+  </tr>
+  <tr>
+    <td>localhost:5173</td>
+    <td>localhost:8080</td>
+    <td style="color: red;">是</td>
+    <td>端口不同</td>
+  </tr>
+  <tr>
+    <td>localhost:5173</td>
+    <td>localhost:5173/api</td>
+    <td style="color: green;">否</td>
+    <td>同源（Vite 代理）</td>
+  </tr>
+  <tr>
+    <td>example.com</td>
+    <td>api.example.com</td>
+    <td style="color: red;">是</td>
+    <td>域名不同</td>
+  </tr>
+</table>
+
+<p>有两种解决方案：</p>
+<table>
+  <tr>
+    <th>方案</th>
+    <th>适用场景</th>
+    <th>原理</th>
+  </tr>
+  <tr>
+    <td><strong>Vite 代理</strong></td>
+    <td>开发环境</td>
+    <td>Vite dev server 转发请求，浏览器认为是同源</td>
+  </tr>
+  <tr>
+    <td><strong>Spring Boot CORS 配置</strong></td>
+    <td>生产环境 / 不便代理时</td>
+    <td>后端响应头声明允许哪些前端源访问</td>
+  </tr>
+</table>
+
+<p>实际开发中<strong>两个都要配</strong>：开发用代理方便，生产用 CORS 配置。下面逐一操作。</p>
+
+<h2>第二步：开发环境 -- Vite 代理（推荐）</h2>
+
+<p>这是你最熟悉的方案。Vite dev server 充当中间人，把 <code>/api/*</code> 的请求转发到 Spring Boot，浏览器看到的全是同源请求，没有 CORS 问题。</p>
+
+<pre><code>// vite.config.js
+import { defineConfig } from 'vite'
+import vue from '@vitejs/plugin-vue'
+
+export default defineConfig({
+  plugins: [vue()],
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, '')
+      }
+    }
+  }
+})</code></pre>
+
+<table>
+  <tr>
+    <th>配置项</th>
+    <th>说明</th>
+  </tr>
+  <tr>
+    <td><code>'/api'</code></td>
+    <td>匹配所有以 <code>/api</code> 开头的请求</td>
+  </tr>
+  <tr>
+    <td><code>target</code></td>
+    <td>转发目标 -- Spring Boot 地址</td>
+  </tr>
+  <tr>
+    <td><code>changeOrigin: true</code></td>
+    <td>修改请求头中的 Host 为 target 地址</td>
+  </tr>
+  <tr>
+    <td><code>rewrite</code></td>
+    <td>去掉 <code>/api</code> 前缀：<code>/api/users</code> -> <code>/users</code></td>
+  </tr>
+</table>
+
+<p>这样，前端 axios 请求 <code>/api/users</code>，Vite 自动转发到 <code>http://localhost:8080/users</code>，浏览器看到的是 <code>localhost:5173/api/users</code> -- 同源，无 CORS。</p>
+
+<pre><code>浏览器 -> localhost:5173/api/users
+               │ Vite 代理转发
+               ▼
+          localhost:8080/users  (Spring Boot)</code></pre>
+
+<h2>第三步：生产环境 -- Spring Boot CORS 配置</h2>
+
+<p>生产环境中前端通常打包成静态文件，由 Nginx 托管或嵌入 Spring Boot。但如果前后端分别部署在不同域名/端口，就需要后端配置 CORS。</p>
+
+<p>在 Spring Boot 项目中新建 <code>CorsConfig.java</code>（与 <code>DemoApplication.java</code> 同级）：</p>
+
+<pre><code>package com.yourname.demo;
+
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+@Configuration
+public class CorsConfig implements WebMvcConfigurer {
+
+    @Override
+    public void addCorsMappings(CorsRegistry registry) {
+        registry.addMapping("/**")                    // 对所有路径生效
+                .allowedOrigins("http://localhost:5173")  // 允许的前端源
+                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                .allowedHeaders("*")                   // 允许所有请求头
+                .allowCredentials(true);               // 允许携带 Cookie
+    }
+}</code></pre>
+
+<table>
+  <tr>
+    <th>配置项</th>
+    <th>说明</th>
+    <th>前端类比</th>
+  </tr>
+  <tr>
+    <td><code>addMapping("/**")</code></td>
+    <td>对所有 API 路径生效</td>
+    <td>-</td>
+  </tr>
+  <tr>
+    <td><code>allowedOrigins</code></td>
+    <td>允许哪些前端地址访问</td>
+    <td>白名单</td>
+  </tr>
+  <tr>
+    <td><code>allowedMethods</code></td>
+    <td>允许的 HTTP 方法</td>
+    <td>-</td>
+  </tr>
+  <tr>
+    <td><code>allowCredentials(true)</code></td>
+    <td>允许携带 Cookie（登录场景需要）</td>
+    <td><code>axios.defaults.withCredentials = true</code></td>
+  </tr>
+</table>
+
+<div class="callout callout-info">
+  <p class="callout-title">CORS 原理</p>
+  <p>配置后，Spring Boot 会在响应头中加上 <code>Access-Control-Allow-Origin: http://localhost:5173</code>。浏览器看到这个头，就知道后端允许该前端访问，于是放行 JS 读取响应。</p>
+  <p>对于 PUT、DELETE 等非简单请求，浏览器会先发一个 <strong>OPTIONS 预检请求</strong>，Spring Boot 自动处理并返回允许的方法。你不需要手写 OPTIONS 接口。</p>
+</div>
+
+<div class="callout callout-tip">
+  <p class="callout-title">开发时也要配 CORS 吗？</p>
+  <p>如果用了 Vite 代理，开发时<strong>不需要</strong>配 CORS -- 代理已经解决了。但建议两个都配上，这样切换环境时不会出问题。生产环境如果用 Nginx 反向代理统一入口，也可以不配 CORS -- 和 Vite 代理同理。</p>
+</div>
+
+<h2>第四步：创建 Vue3 前端项目</h2>
+
+<p>你是 Vue3 老手，这里快速过一遍。在 Spring Boot 项目的<strong>同级目录</strong>创建前端项目：</p>
+
+<div class="terminal">
+<span class="prompt">PS C:\coding></span> npm create vite@latest frontend -- --template vue
+<span class="prompt">PS C:\coding></span> cd frontend
+<span class="prompt">PS C:\coding\frontend></span> npm install
+<span class="prompt">PS C:\coding\frontend></span> npm install axios
+</div>
+
+<p>把上面的 <code>vite.config.js</code> 代理配置写进去。</p>
+
+<h2>第五步：API 调用层</h2>
+
+<p>新建 <code>src/api/user.js</code>：</p>
+
+<pre><code>import axios from 'axios'
+
+const api = axios.create({
+  baseURL: '/api',   // 走 Vite 代理
+  timeout: 5000
+})
+
+export default {
+  getList(params) {
+    return api.get('/users', { params })
+  },
+  getById(id) {
+    return api.get(`/users/${id}`)
+  },
+  create(data) {
+    return api.post('/users', data)
+  },
+  update(id, data) {
+    return api.put(`/users/${id}`, data)
+  },
+  delete(id) {
+    return api.delete(`/users/${id}`)
+  }
+}</code></pre>
+
+<div class="callout callout-info">
+  <p class="callout-title">baseURL: '/api' 的作用</p>
+  <p>所有请求自动加上 <code>/api</code> 前缀：<code>api.get('/users')</code> 实际请求 <code>/api/users</code> -> Vite 代理转发到 <code>http://localhost:8080/users</code>。生产环境把 <code>baseURL</code> 改成实际后端地址即可。</p>
+</div>
+
+<h2>第六步：用户管理页面</h2>
+
+<p>替换 <code>src/App.vue</code>，一个完整的增删改查页面：</p>
+
+<pre><code>&lt;script setup&gt;
+import { ref, onMounted } from 'vue'
+import userApi from './api/user.js'
+
+const users = ref([])
+const total = ref(0)
+const currentPage = ref(1)
+const pageSize = ref(5)
+const searchName = ref('')
+
+const dialogVisible = ref(false)
+const editing = ref(false)
+const form = ref({ id: null, name: '', email: '' })
+
+async function loadData() {
+  const res = await userApi.getList({
+    page: currentPage.value,
+    size: pageSize.value,
+    name: searchName.value || undefined
+  })
+  users.value = res.data.records
+  total.value = res.data.total
+}
+
+function handleSearch() {
+  currentPage.value = 1
+  loadData()
+}
+
+function openCreate() {
+  editing.value = false
+  form.value = { id: null, name: '', email: '' }
+  dialogVisible.value = true
+}
+
+function openEdit(user) {
+  editing.value = true
+  form.value = { ...user }
+  dialogVisible.value = true
+}
+
+async function save() {
+  if (editing.value) {
+    await userApi.update(form.value.id, form.value)
+  } else {
+    await userApi.create(form.value)
+  }
+  dialogVisible.value = false
+  loadData()
+}
+
+async function remove(id) {
+  if (!confirm('确定删除？')) return
+  await userApi.delete(id)
+  loadData()
+}
+
+onMounted(loadData)
+&lt;/script&gt;
+
+&lt;template&gt;
+  &lt;div style="max-width: 700px; margin: 2rem auto;"&gt;
+    &lt;h1&gt;用户管理&lt;/h1&gt;
+
+    &lt;!-- 搜索栏 --&gt;
+    &lt;div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;"&gt;
+      &lt;input v-model="searchName" placeholder="搜索姓名"
+             @keyup.enter="handleSearch" /&gt;
+      &lt;button @click="handleSearch"&gt;搜索&lt;/button&gt;
+      &lt;button @click="openCreate"&gt;新增&lt;/button&gt;
+    &lt;/div&gt;
+
+    &lt;!-- 数据表格 --&gt;
+    &lt;table border="1" style="width: 100%; border-collapse: collapse;"&gt;
+      &lt;thead&gt;
+        &lt;tr&gt;
+          &lt;th&gt;ID&lt;/th&gt;
+          &lt;th&gt;姓名&lt;/th&gt;
+          &lt;th&gt;邮箱&lt;/th&gt;
+          &lt;th&gt;操作&lt;/th&gt;
+        &lt;/tr&gt;
+      &lt;/thead&gt;
+      &lt;tbody&gt;
+        &lt;tr v-for="user in users" :key="user.id"&gt;
+          &lt;td&gt;{{ user.id }}&lt;/td&gt;
+          &lt;td&gt;{{ user.name }}&lt;/td&gt;
+          &lt;td&gt;{{ user.email }}&lt;/td&gt;
+          &lt;td&gt;
+            &lt;button @click="openEdit(user)"&gt;编辑&lt;/button&gt;
+            &lt;button @click="remove(user.id)"&gt;删除&lt;/button&gt;
+          &lt;/td&gt;
+        &lt;/tr&gt;
+      &lt;/tbody&gt;
+    &lt;/table&gt;
+
+    &lt;!-- 分页 --&gt;
+    &lt;div style="margin-top: 1rem; display: flex; gap: 1rem; align-items: center;"&gt;
+      &lt;button :disabled="currentPage &lt;= 1"
+              @click="currentPage--; loadData()"&gt;上一页&lt;/button&gt;
+      &lt;span&gt;第 {{ currentPage }} 页 / 共
+            {{ Math.ceil(total / pageSize) }} 页
+            ({{ total }} 条)&lt;/span&gt;
+      &lt;button :disabled="currentPage >= Math.ceil(total / pageSize)"
+              @click="currentPage++; loadData()"&gt;下一页&lt;/button&gt;
+    &lt;/div&gt;
+
+    &lt;!-- 新增/编辑弹窗 --&gt;
+    &lt;div v-if="dialogVisible"
+         style="margin-top: 1rem; padding: 1rem; border: 1px solid #ccc;"&gt;
+      &lt;h3&gt;{{ editing ? '编辑用户' : '新增用户' }}&lt;/h3&gt;
+      &lt;input v-model="form.name" placeholder="姓名" /&gt;
+      &lt;input v-model="form.email" placeholder="邮箱" /&gt;
+      &lt;button @click="save"&gt;保存&lt;/button&gt;
+      &lt;button @click="dialogVisible = false"&gt;取消&lt;/button&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+&lt;/template&gt;</code></pre>
+
+<div class="callout callout-tip">
+  <p class="callout-title">Vue3 部分你比我还熟</p>
+  <p>上面的 Vue3 代码是最简版，实际项目你肯定用 Element Plus / Naive UI 的表格和分页组件。这里省略了 UI 库，聚焦在<strong>API 对接</strong>上。核心就是 <code>userApi.getList()</code> 返回的 <code>res.data.records</code> 和 <code>res.data.total</code> -- 对应后端 <code>Page&lt;User&gt;</code> 的 JSON 结构。</p>
+</div>
+
+<h2>第七步：联调测试</h2>
+
+<div class="steps-container">
+
+<div class="step">
+  <h3>启动后端</h3>
+  <p>在 IDEA 中运行 <code>DemoApplication</code>，确认 <code>http://localhost:8080/users</code> 能访问。</p>
+</div>
+
+<div class="step">
+  <h3>启动前端</h3>
+  <div class="terminal">
+<span class="prompt">PS C:\coding\frontend></span> npm run dev
+<span class="output">  VITE v6.x  ready in 300 ms
+
+  ➜  Local:   http://localhost:5173/</span>
+  </div>
+</div>
+
+<div class="step">
+  <h3>打开前端页面</h3>
+  <p>浏览器访问 <code>http://localhost:5173</code>，你应该看到：</p>
+  <ul>
+    <li>用户列表 -- 显示 5 条数据（第一页）</li>
+    <li>分页 -- 显示"第 1 页 / 共 4 页 (16 条)"</li>
+    <li>搜索 -- 输入"e"点搜索，筛选名字含 e 的用户</li>
+    <li>新增 -- 点新增，填入姓名邮箱，保存后列表刷新</li>
+    <li>编辑 -- 点编辑，修改信息，保存后更新</li>
+    <li>删除 -- 点删除，确认后消失</li>
+  </ul>
+</div>
+
+<div class="step">
+  <h3>验证全链路</h3>
+  <p>打开浏览器 DevTools -> Network，观察请求：</p>
+  <table>
+    <tr>
+      <th>操作</th>
+      <th>请求 URL</th>
+      <th>Method</th>
+      <th>后端处理</th>
+    </tr>
+    <tr>
+      <td>加载列表</td>
+      <td>/api/users?page=1&amp;size=5</td>
+      <td>GET</td>
+      <td>selectPage</td>
+    </tr>
+    <tr>
+      <td>搜索</td>
+      <td>/api/users?page=1&amp;size=5&amp;name=e</td>
+      <td>GET</td>
+      <td>selectPage + like</td>
+    </tr>
+    <tr>
+      <td>新增</td>
+      <td>/api/users</td>
+      <td>POST</td>
+      <td>insert</td>
+    </tr>
+    <tr>
+      <td>编辑</td>
+      <td>/api/users/1</td>
+      <td>PUT</td>
+      <td>updateById</td>
+    </tr>
+    <tr>
+      <td>删除</td>
+      <td>/api/users/1</td>
+      <td>DELETE</td>
+      <td>deleteById</td>
+    </tr>
+  </table>
+  <p>每个请求的响应体中都包含后端返回的 JSON 数据。全栈链路跑通！</p>
+</div>
+
+</div>
+
+<h2>全栈架构总览</h2>
+
+<pre><code>┌──────────────────────────────────────────────┐
+│                 浏览器                        │
+│  http://localhost:5173                        │
+│                                               │
+│  Vue3 App                                     │
+│  ┌─────────────┐    ┌──────────────────┐     │
+│  │ UserList.vue │ -> │ api/user.js      │     │
+│  │ (UI 组件)    │    │ axios baseURL:/api│     │
+│  └─────────────┘    └────────┬─────────┘     │
+│                             │ /api/users      │
+│  ┌──────────────────────────┼──────────────┐ │
+│  │  Vite Dev Server (:5173) │              │ │
+│  │  proxy: /api -> :8080    │              │ │
+│  └──────────────────────────┼──────────────┘ │
+└─────────────────────────────┼────────────────┘
+                              │ HTTP 转发
+                              ▼
+┌──────────────────────────────────────────────┐
+│            Spring Boot (:8080)               │
+│                                              │
+│  CorsConfig (允许 :5173 跨域)                 │
+│  ┌─────────────────┐                        │
+│  │ UserController   │  GET/POST/PUT/DELETE   │
+│  │ @RestController  │  @RequestParam         │
+│  └────────┬────────┘                        │
+│           │                                  │
+│  ┌────────▼────────┐                        │
+│  │ UserMapper       │  selectPage/insert     │
+│  │ BaseMapper&lt;User&gt; │  updateById/deleteById │
+│  │ + Pagination     │                        │
+│  └────────┬────────┘                        │
+│           │ SQL                               │
+│  ┌────────▼────────┐                        │
+│  │ PostgreSQL       │  users 表 (16 条)      │
+│  └─────────────────┘                        │
+└──────────────────────────────────────────────┘</code></pre>
+
+<p>这就是一个完整的前后端分离全栈架构。你在 Vue3 前端用 axios 发请求，经过 Vite 代理转发到 Spring Boot，后端通过 Controller -> Mapper -> PostgreSQL 处理，返回 JSON 给前端渲染。</p>
+
+<h2>前后端数据流对照</h2>
+
+<table>
+  <tr>
+    <th>环节</th>
+    <th>前端（Vue3）</th>
+    <th>后端（Spring Boot）</th>
+  </tr>
+  <tr>
+    <td>发起请求</td>
+    <td><code>axios.get('/api/users', { params })</code></td>
+    <td>-</td>
+  </tr>
+  <tr>
+    <td>路由匹配</td>
+    <td>-</td>
+    <td><code>@GetMapping("/users")</code></td>
+  </tr>
+  <tr>
+    <td>接收参数</td>
+    <td><code>{ page: 1, size: 5, name: 'e' }</code></td>
+    <td><code>@RequestParam</code> 自动绑定</td>
+  </tr>
+  <tr>
+    <td>业务处理</td>
+    <td>-</td>
+    <td><code>LambdaQueryWrapper</code> + <code>selectPage</code></td>
+  </tr>
+  <tr>
+    <td>返回数据</td>
+    <td><code>res.data.records</code> / <code>res.data.total</code></td>
+    <td><code>Page&lt;User&gt;</code> 自动转 JSON</td>
+  </tr>
+  <tr>
+    <td>渲染 UI</td>
+    <td><code>v-for="user in users"</code></td>
+    <td>-</td>
+  </tr>
+</table>
+
+<div class="quiz">
+  <h3>小测验</h3>
+  <p class="quiz-question">浏览器阻止跨域请求时，请求是否到达了后端？</p>
+  <ul class="quiz-options">
+    <li class="quiz-option" onclick="checkAnswer(this, false)">没有到达后端被浏览器拦截</li>
+    <li class="quiz-option" onclick="checkAnswer(this, true)">到达后端了但浏览器不给响应</li>
+    <li class="quiz-option" onclick="checkAnswer(this, false)">后端收到了但拒绝返回数据</li>
+    <li class="quiz-option" onclick="checkAnswer(this, false)">浏览器和后端都没有处理</li>
+  </ul>
+  <div class="quiz-feedback" id="quiz-feedback"></div>
+</div>
+
+<div class="quiz">
+  <h3>小测验</h3>
+  <p class="quiz-question">Vite 代理为什么能解决跨域问题？</p>
+  <ul class="quiz-options">
+    <li class="quiz-option" onclick="checkAnswer2(this, true)">请求发给同源的 Vite 再转发</li>
+    <li class="quiz-option" onclick="checkAnswer2(this, false)">Vite 修改了浏览器的安全策略</li>
+    <li class="quiz-option" onclick="checkAnswer2(this, false)">Vite 给请求加上了 CORS 头</li>
+    <li class="quiz-option" onclick="checkAnswer2(this, false)">Vite 和后端共享同一个端口</li>
+  </ul>
+  <div class="quiz-feedback" id="quiz-feedback-2"></div>
+</div>
+
+<div class="quiz">
+  <h3>小测验</h3>
+  <p class="quiz-question">Spring Boot 的 CORS 配置中 allowedOrigins 的作用是什么？</p>
+  <ul class="quiz-options">
+    <li class="quiz-option" onclick="checkAnswer3(this, false)">限制后端只能访问的前端地址</li>
+    <li class="quiz-option" onclick="checkAnswer3(this, true)">声明允许访问后端的前端地址</li>
+    <li class="quiz-option" onclick="checkAnswer3(this, false)">设置前端静态资源的存放路径</li>
+    <li class="quiz-option" onclick="checkAnswer3(this, false)">配置数据库连接的来源地址</li>
+  </ul>
+  <div class="quiz-feedback" id="quiz-feedback-3"></div>
+</div>
+
+<div class="callout callout-tip">
+  <p class="callout-title">里程碑：全栈跑通！</p>
+  <p>恭喜！你已经完成了从零到全栈的完整链路：JDK 安装 -> Maven -> Spring Boot 项目 -> REST API -> PostgreSQL + MyBatis Plus -> CRUD + 搜索 + 分页 -> Vue3 前端联调。你的 Mission 核心目标已经实现！</p>
+  <p>后续课程将进入<strong>工程化进阶</strong>：Service 层架构、统一异常处理、参数校验、接口文档等 -- 让你的后端代码更规范、更健壮。遇到任何问题随时问我！</p>
+</div>
+
+<h2>推荐阅读</h2>
+<p>主资源：<a href="https://spring.io/guides/gs/rest-service-cors" target="_blank">Spring 官方指南 - REST Service CORS</a></p>
+<p>参考：<a href="https://developer.mozilla.org/zh-CN/docs/Web/HTTP/CORS" target="_blank">MDN - 跨源资源共享（CORS）</a></p>
+<p>参考：<a href="../reference/glossary.html">术语表</a></p>
+
+<div class="lesson-nav">
+  <a href="0007-query-wrapper.html"><- 上一课：条件构造器与分页查询</a>
+  <a href="0009-service-layer.html">下一课：Service 层与异常处理 -></a>
+</div>
+
+<div class="footer">
+  <p>有任何不清楚的地方？直接问我！我是你的 Java 后端老师，随时帮你解决疑问。</p>
+</div>
+
+<script>
+function checkAnswer(el, isCorrect) {
+  var options = el.parentNode.querySelectorAll('.quiz-option');
+  var feedback = document.getElementById('quiz-feedback');
+  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
+  if (isCorrect) {
+    el.classList.add('correct');
+    feedback.className = 'quiz-feedback show correct';
+    feedback.textContent = '正确！CORS 是浏览器端的安全策略。请求实际上已经发到后端并被处理了，只是浏览器检查响应头后发现后端没有声明允许跨域，于是拒绝把响应交给 JS。这就是为什么你在 Network 面板能看到请求，但 JS 拿不到数据。';
+  } else {
+    el.classList.add('incorrect');
+    feedback.className = 'quiz-feedback show incorrect';
+    feedback.textContent = '不对。请求确实到达了后端，后端也处理了并返回了响应。是浏览器在收到响应后检查 CORS 头，发现不允许跨域，于是不给 JS 读取响应。';
+  }
+}
+
+function checkAnswer2(el, isCorrect) {
+  var options = el.parentNode.querySelectorAll('.quiz-option');
+  var feedback = document.getElementById('quiz-feedback-2');
+  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
+  if (isCorrect) {
+    el.classList.add('correct');
+    feedback.className = 'quiz-feedback show correct';
+    feedback.textContent = '正确！Vue3 发请求到 /api/users（同源，localhost:5173），Vite dev server 收到后转发到 localhost:8080/users。浏览器只看到同源请求，不触发 CORS 检查。服务器之间的转发不受同源策略限制。';
+  } else {
+    el.classList.add('incorrect');
+    feedback.className = 'quiz-feedback show incorrect';
+    feedback.textContent = '不对。Vite 不能修改浏览器的安全策略，也不和后端共享端口。它的原理是作为同源中间人转发请求 -- 浏览器看到的是发往 localhost:5173 的同源请求。';
+  }
+}
+
+function checkAnswer3(el, isCorrect) {
+  var options = el.parentNode.querySelectorAll('.quiz-option');
+  var feedback = document.getElementById('quiz-feedback-3');
+  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
+  if (isCorrect) {
+    el.classList.add('correct');
+    feedback.className = 'quiz-feedback show correct';
+    feedback.textContent = '正确！allowedOrigins 是后端声明的"前端白名单" -- 只有列表中的源发来的请求才允许跨域访问。浏览器看到响应头中的 Access-Control-Allow-Origin 与自己匹配，就放行 JS 读取响应。';
+  } else {
+    el.classList.add('incorrect');
+    feedback.className = 'quiz-feedback show incorrect';
+    feedback.textContent = '不对。allowedOrigins 不是限制后端访问谁，而是声明哪些前端地址可以跨域访问后端。相当于后端说"我允许这些前端来调用我"。';
+  }
+}
+</script>
+
+</body>
+</html>
