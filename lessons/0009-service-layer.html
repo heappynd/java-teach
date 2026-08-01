@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>第 9 课：Service 层 - Java 后端学习</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<h1>第 9 课：Service 层 -- 业务逻辑的家</h1>
+<p class="lesson-meta">预计用时：30 分钟 | 难度：中级 | 前置知识：<a href="0007-query-wrapper.html">第 7 课 条件构造器与分页查询</a>、<a href="0008-frontend-backend-integration.html">第 8 课 前后端联调</a></p>
+
+<h2>目标：给业务逻辑找个家</h2>
+
+<p>从这一课开始，进入<strong>工程化进阶</strong>阶段。前 8 课你的全栈链路已经跑通，但现在有一个架构隐患：<strong>Controller 直接操作 Mapper</strong>，查询条件、分页逻辑全堆在 Controller 里。</p>
+
+<p>用你熟悉的前端类比：这就像在 Vue 组件的 <code>@click</code> 事件里直接写 axios 调用，还夹杂着各种业务判断 -- 小项目能跑，但业务逻辑一复杂就失控。你在前端是怎么解决的？<strong>分层</strong>：axios 调用抽进 <code>api/user.js</code>，共享业务逻辑抽进 Pinia store。后端也一样。</p>
+
+<div class="compare-grid">
+  <div class="compare-card frontend">
+    <h4>前端（你已熟悉）</h4>
+    <p>Vue 组件（模板 + 事件处理）</p>
+    <p>↓ 调用</p>
+    <p>Pinia store actions（业务逻辑）</p>
+    <p>↓ 调用</p>
+    <p>api/user.js（axios 请求封装）</p>
+  </div>
+  <div class="compare-card backend">
+    <h4>后端（今天学的）</h4>
+    <p>Controller（@RestController）</p>
+    <p>↓ 调用</p>
+    <p>Service（@Service）<-- 今天新增</p>
+    <p>↓ 调用</p>
+    <p>Mapper（BaseMapper）</p>
+  </div>
+</div>
+
+<h2>三层架构：Controller -> Service -> Mapper</h2>
+
+<p>这是 Java 后端最经典的分层模式，每一层职责单一：</p>
+
+<pre><code>浏览器 (Vue3 + axios)
+     │ HTTP 请求 / JSON 响应
+     ▼
+┌─────────────────────────────────────────────────┐
+│  Controller 层   @RestController                 │
+│  职责：接收请求、参数绑定、返回 JSON                │
+│  类比：Vue 组件的事件处理函数（@click -> 函数）     │
+└───────────────────┬─────────────────────────────┘
+                    │ 调用（依赖注入）
+                    ▼
+┌─────────────────────────────────────────────────┐
+│  Service 层   @Service        <-- 今天的主角      │
+│  职责：业务逻辑 -- 校验、计算、组合多次数据操作      │
+│  类比：Pinia store 的 actions / composables      │
+└───────────────────┬─────────────────────────────┘
+                    │ 调用
+                    ▼
+┌─────────────────────────────────────────────────┐
+│  Mapper 层   BaseMapper&lt;User&gt;                    │
+│  职责：数据访问 -- 一个方法对应一条 SQL             │
+│  类比：api/user.js 里封装的 axios 调用            │
+└───────────────────┬─────────────────────────────┘
+                    │ SQL
+                    ▼
+               PostgreSQL</code></pre>
+
+<table>
+  <tr>
+    <th>分层</th>
+    <th>职责</th>
+    <th>前端类比</th>
+    <th>不该做什么</th>
+  </tr>
+  <tr>
+    <td>Controller</td>
+    <td>HTTP 交互：收参数、返回 JSON</td>
+    <td>Vue 组件事件处理</td>
+    <td>不写业务规则</td>
+  </tr>
+  <tr>
+    <td><strong>Service</strong></td>
+    <td>业务逻辑：校验、计算、组合调用</td>
+    <td>Pinia store actions</td>
+    <td>不关心 HTTP 细节</td>
+  </tr>
+  <tr>
+    <td>Mapper</td>
+    <td>数据访问：方法与 SQL 一一对应</td>
+    <td>api/user.js</td>
+    <td>不写业务判断</td>
+  </tr>
+</table>
+
+<div class="callout callout-info">
+  <p class="callout-title">为什么业务逻辑不能放 Controller？</p>
+  <p>和你不会把复杂业务判断写在 Vue 组件的 <code>@click</code> 里是同一个道理：</p>
+  <ul>
+    <li><strong>复用</strong> -- 同一段业务规则（如"邮箱查重"）可能被多个入口使用：用户注册接口、后台管理接口、未来的定时任务。放 Service 层大家都能调，就像多个组件共享同一个 store action。</li>
+    <li><strong>测试</strong> -- Service 是普通 Java 类，不依赖 HTTP，可以直接写单元测试，就像你单独测试 store action 而不用挂载组件。</li>
+    <li><strong>可维护</strong> -- Controller 一眼看清有哪些 API，Service 一眼看清有哪些业务规则，各归其位。</li>
+  </ul>
+</div>
+
+<h2>第一步：创建 UserService 接口</h2>
+
+<p>MyBatis Plus 不只是提供了 <code>BaseMapper</code>，还提供了一套配套的 Service 层脚手架：<code>IService</code> 接口 + <code>ServiceImpl</code> 实现类。用法和 <code>BaseMapper</code> 一样 -- 继承就自动获得全套 CRUD 方法。</p>
+
+<p>在 <code>com.yourname.demo</code> 包下（与 <code>UserController.java</code> 同目录）新建 <code>UserService.java</code>：</p>
+
+<pre><code>package com.yourname.demo;
+
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.extension.service.IService;
+
+public interface UserService extends IService&lt;User&gt; {
+
+    // 自定义业务方法：分页 + 条件搜索（第 7 课写在 Controller 里的逻辑，搬到这里）
+    Page&lt;User&gt; pageList(long page, long size, String name, String email);
+
+    // 自定义业务方法：创建用户（内含业务规则，第四步实现）
+    User createUser(User user);
+}</code></pre>
+
+<p>注意两个要点：</p>
+<ul>
+  <li><code>extends IService&lt;User&gt;</code> -- 自动获得 <code>save()</code>、<code>getById()</code>、<code>page()</code>、<code>removeById()</code> 等全套方法，<strong>不用声明、不用实现</strong>，和 <code>UserMapper extends BaseMapper&lt;User&gt;</code> 同理（见<a href="0006-connect-postgresql.html">第 6 课</a>）。</li>
+  <li>只声明<strong>自定义业务方法</strong> -- 通用 CRUD 已经白嫖了，接口里只写 BaseMapper/IService 没有的东西。</li>
+</ul>
+
+<div class="callout callout-tip">
+  <p class="callout-title">接口 + Impl：TypeScript 程序员不陌生</p>
+  <p>Java 的惯例是一个 Service 拆成两个文件：<code>UserService</code>（接口，定义契约）+ <code>UserServiceImpl</code>（实现类）。你在 TypeScript 里也这么干过：</p>
+  <pre><code>interface UserService {           // 契约：有哪些方法
+  pageList(...): Promise&lt;Page&lt;User&gt;&gt;
+}
+class UserServiceImpl implements UserService { ... }  // 实现</code></pre>
+  <p>好处：Controller 只依赖<strong>接口</strong>，不关心实现。以后想换实现（比如测试时换成 mock），Controller 一行不用改。</p>
+</div>
+
+<h2>第二步：创建 UserServiceImpl 实现类</h2>
+
+<p>同目录新建 <code>UserServiceImpl.java</code>：</p>
+
+<pre><code>package com.yourname.demo;
+
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import org.springframework.stereotype.Service;
+
+@Service   // 告诉 Spring：扫描我，把我放进容器
+public class UserServiceImpl extends ServiceImpl&lt;UserMapper, User&gt; implements UserService {
+
+    @Override
+    public Page&lt;User&gt; pageList(long page, long size, String name, String email) {
+        // 第 7 课的查询逻辑，原封不动从 Controller 搬过来
+        LambdaQueryWrapper&lt;User&gt; wrapper = new LambdaQueryWrapper&lt;&gt;();
+        wrapper.like(name != null &amp;&amp; !name.isEmpty(), User::getName, name)
+               .like(email != null &amp;&amp; !email.isEmpty(), User::getEmail, email)
+               .orderByDesc(User::getId);
+        return page(new Page&lt;&gt;(page, size), wrapper);   // IService 自带的 page()
+    }
+
+    @Override
+    public User createUser(User user) {
+        save(user);   // IService 自带的 save()，对应 userMapper.insert(user)
+        return user;
+    }
+}</code></pre>
+
+<p><code>extends ServiceImpl&lt;UserMapper, User&gt;</code> 的两个泛型参数分别是：<strong>它要操作哪个 Mapper</strong>、<strong>操作哪个实体</strong>。继承之后，<code>IService</code> 的所有方法自动可用，内部会帮你调用 <code>UserMapper</code> -- 你一行实现都不用写。</p>
+
+<div class="callout callout-info">
+  <p class="callout-title">@Service 与 Spring 容器：后端的 provide / inject</p>
+  <p><code>@Service</code> 干的事和 <code>@RestController</code>（<a href="0004-first-rest-api.html">第 4 课</a>）一样：Spring Boot 启动时扫描所有带这些注解的类，<strong>各创建一个实例放进"容器"</strong>（默认单例，全应用共享）。</p>
+  <p>这套机制用 Vue 类比再合适不过：</p>
+  <pre><code>// Vue3 中
+app.provide('userStore', userStore)   // ≈ @Service：注册进容器
+const store = inject('userStore')     // ≈ 依赖注入：从容器取出使用</code></pre>
+  <p><code>@Service</code> 就是 <code>@Component</code> 的语义化版本，功能相同，名字标明"我是业务层"。</p>
+</div>
+
+<div class="callout callout-jdk8">
+  <p class="callout-title">完全兼容</p>
+  <p>本课所有代码 -- 接口、继承、注解、构造器注入 -- 都是 Java 和 Spring 早期就有的基础特性，<strong>没有任何 JDK 9+ 语法</strong>，在 JDK 8 下原样可用。</p>
+  <p>MyBatis Plus 的 <code>IService</code> / <code>ServiceImpl</code> 在 JDK 8 环境（Spring Boot 2.x）同样可用，只需使用对应的 starter，对照表见<a href="0006-connect-postgresql.html">第 6 课</a>。</p>
+</div>
+
+<h2>第三步：重构 UserController</h2>
+
+<p>现在把 Controller 里的查询逻辑全部搬空，改成调用 Service。先看<strong>重构前</strong>（你现在的代码）：</p>
+
+<pre><code>@RestController
+@RequestMapping("/users")
+public class UserController {
+
+    @Autowired
+    private UserMapper userMapper;   // 直接操作 Mapper -- 今天要去掉
+
+    @GetMapping
+    public Page&lt;User&gt; getList(
+            @RequestParam(defaultValue = "1") long page,
+            @RequestParam(defaultValue = "10") long size,
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String email) {
+        Page&lt;User&gt; pageObj = new Page&lt;&gt;(page, size);
+        LambdaQueryWrapper&lt;User&gt; wrapper = new LambdaQueryWrapper&lt;&gt;();
+        wrapper.like(name != null &amp;&amp; !name.isEmpty(), User::getName, name)
+               .like(email != null &amp;&amp; !email.isEmpty(), User::getEmail, email)
+               .orderByDesc(User::getId);
+        return userMapper.selectPage(pageObj, wrapper);
+    }
+    // ... 其他方法也都直接调用 userMapper
+}</code></pre>
+
+<p><strong>重构后</strong> -- 每个方法只剩一行调用，干净清爽：</p>
+
+<pre><code>@RestController
+@RequestMapping("/users")
+public class UserController {
+
+    private final UserService userService;
+
+    // 构造器注入：Spring 启动时自动把容器里的 UserService 实例传进来
+    public UserController(UserService userService) {
+        this.userService = userService;
+    }
+
+    @GetMapping
+    public Page&lt;User&gt; getList(
+            @RequestParam(defaultValue = "1") long page,
+            @RequestParam(defaultValue = "10") long size,
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String email) {
+        return userService.pageList(page, size, name, email);
+    }
+
+    @GetMapping("/{id}")
+    public User getById(@PathVariable Long id) {
+        return userService.getById(id);
+    }
+
+    @PostMapping
+    public User create(@RequestBody User user) {
+        return userService.createUser(user);
+    }
+
+    @PutMapping("/{id}")
+    public User update(@PathVariable Long id, @RequestBody User user) {
+        user.setId(id);
+        userService.updateById(user);
+        return userService.getById(id);
+    }
+
+    @DeleteMapping("/{id}")
+    public String delete(@PathVariable Long id) {
+        userService.removeById(id);
+        return "Deleted user " + id;
+    }
+}</code></pre>
+
+<p>注意三个变化：</p>
+<ul>
+  <li><code>UserMapper</code>、<code>LambdaQueryWrapper</code> 的 import 全部消失 -- 查询条件是业务细节，归 Service 管，Controller 不该认识它们。</li>
+  <li><code>@GetMapping("/{id}")</code> 等方法直接调 <code>userService.getById(id)</code> -- IService 自带的方法，ServiceImpl 已经帮你实现好了。</li>
+  <li>字段注入 <code>@Autowired private UserMapper</code> 换成了<strong>构造器注入</strong>。</li>
+</ul>
+
+<div class="callout callout-tip">
+  <p class="callout-title">为什么推荐构造器注入？</p>
+  <p>之前课程用 <code>@Autowired</code> 标在字段上，能工作，但 Spring 官方推荐构造器注入：</p>
+  <ul>
+    <li><code>final</code> 字段 -- 依赖不可变，不可能被意外替换</li>
+    <li>依赖关系一目了然 -- 看构造器就知道这个类需要什么</li>
+    <li>方便测试 -- 单元测试时 <code>new UserController(mockService)</code> 就能传入 mock</li>
+  </ul>
+  <p>而且只有一个构造器时，连 <code>@Autowired</code> 注解都不用写，Spring 自动识别。</p>
+</div>
+
+<h2>第四步：加入第一个真正的业务逻辑 -- 邮箱查重</h2>
+
+<p>架构搭好了，现在体会一下 Service 层的价值。需求：<strong>新增用户时，邮箱不能重复</strong>。</p>
+
+<p>想想这段逻辑放哪？放 Controller？那未来后台管理接口也要新增用户时就得复制一遍。这是典型的<strong>业务规则</strong>，放 Service：</p>
+
+<pre><code>// UserServiceImpl.java 中，修改 createUser 方法
+@Override
+public User createUser(User user) {
+    // 业务规则：邮箱不能重复
+    long count = count(new LambdaQueryWrapper&lt;User&gt;()
+            .eq(User::getEmail, user.getEmail()));
+    if (count &gt; 0) {
+        throw new IllegalArgumentException("邮箱已被注册: " + user.getEmail());
+    }
+    save(user);
+    return user;
+}</code></pre>
+
+<p><code>count(wrapper)</code> 也是 IService 自带方法，对应 <code>userMapper.selectCount(wrapper)</code>，生成 <code>SELECT COUNT(*) FROM users WHERE email = ?</code>。整个方法读起来就是业务本身：<strong>查重 -> 重复就报错 -> 不重复才保存</strong>。</p>
+
+<div class="callout callout-warn">
+  <p class="callout-title">现在抛异常会发生什么？（下一课的钩子）</p>
+  <p>重启后测试：用同一个邮箱 POST 两次，第二次你会看到 Spring Boot 默认的 <strong>500 错误页</strong>（Whitelabel Error Page）-- 一堆 HTML 和服务器内部信息。你的 Vue3 前端 axios 收到的是 HTML 而不是 JSON，<code>res.data</code> 根本没法解析。</p>
+  <p>这就像前端把原始 <code>Error</code> 对象直接 <code>alert()</code> 给用户看。正确的做法是后端把所有异常统一转成规范的 JSON 错误响应 -- 这就是<strong>下一课：全局异常处理（@RestControllerAdvice）</strong>要解决的问题。今天先让业务规则生效即可。</p>
+</div>
+
+<h2>第五步：验证重构</h2>
+
+<div class="steps-container">
+
+<div class="step">
+  <h3>重启应用</h3>
+  <p>IDEA 中重新运行 <code>DemoApplication</code>。观察启动日志 -- 没有任何报错，说明 Spring 成功扫描到 <code>UserServiceImpl</code> 并注入了 <code>UserController</code>。</p>
+  <p>如果报 <code>No qualifying bean of type 'UserService'</code>，检查 <code>UserServiceImpl</code> 上是否忘了加 <code>@Service</code>。</p>
+</div>
+
+<div class="step">
+  <h3>回归测试：行为不能变</h3>
+  <p>重构的定义是<strong>不改变外部行为，只调整内部结构</strong>。用第 7、8 课的方法验证所有接口：</p>
+  <ul>
+    <li>浏览器访问 <code>http://localhost:8080/users?page=1&amp;size=5</code> -- 结果与重构前完全一致</li>
+    <li>访问 <code>http://localhost:8080/users?name=e</code> -- 搜索正常</li>
+    <li>打开 Vue3 前端（<code>npm run dev</code>）-- 列表、搜索、分页、增删改全部正常，<strong>前端零改动</strong></li>
+  </ul>
+</div>
+
+<div class="step">
+  <h3>测试新业务规则：邮箱查重</h3>
+  <p>用 REST Client 或 Postman 发送（email 换成你数据库里已存在的值）：</p>
+  <pre><code>POST http://localhost:8080/users
+Content-Type: application/json
+
+{"name":"Duplicate","email":"填一个已存在的邮箱"}</code></pre>
+  <p>预期结果：返回 <strong>500</strong>，说明查重逻辑生效了，重复邮箱被拒绝入库。去数据库确认没有插入重复记录。</p>
+  <p>错误页面难看？正常，那是下一课要修的事。</p>
+</div>
+
+</div>
+
+<h2>IService 与 BaseMapper 方法对照</h2>
+
+<p>IService 的方法名和 BaseMapper 刻意不同（<code>get</code> 查单行、<code>remove</code> 删除、<code>list</code> 列表、<code>page</code> 分页），避免两层方法混淆。对照表：</p>
+
+<table>
+  <tr>
+    <th>操作</th>
+    <th>Mapper 层 BaseMapper</th>
+    <th>Service 层 IService</th>
+  </tr>
+  <tr>
+    <td>新增</td>
+    <td><code>insert(entity)</code></td>
+    <td><code>save(entity)</code></td>
+  </tr>
+  <tr>
+    <td>按 ID 删除</td>
+    <td><code>deleteById(id)</code></td>
+    <td><code>removeById(id)</code></td>
+  </tr>
+  <tr>
+    <td>按 ID 更新</td>
+    <td><code>updateById(entity)</code></td>
+    <td><code>updateById(entity)</code></td>
+  </tr>
+  <tr>
+    <td>按 ID 查询</td>
+    <td><code>selectById(id)</code></td>
+    <td><code>getById(id)</code></td>
+  </tr>
+  <tr>
+    <td>条件计数</td>
+    <td><code>selectCount(wrapper)</code></td>
+    <td><code>count(wrapper)</code></td>
+  </tr>
+  <tr>
+    <td>条件列表</td>
+    <td><code>selectList(wrapper)</code></td>
+    <td><code>list(wrapper)</code></td>
+  </tr>
+  <tr>
+    <td>分页查询</td>
+    <td><code>selectPage(page, wrapper)</code></td>
+    <td><code>page(page, wrapper)</code></td>
+  </tr>
+</table>
+
+<p>更多方法见 <a href="../reference/mybatis-plus-cheatsheet.html">MyBatis Plus 速查表</a>。ServiceImpl 内部就是帮你调用对应的 BaseMapper 方法，所以 SQL 行为完全一致。</p>
+
+<div class="callout callout-tip">
+  <p class="callout-title">项目大了怎么组织包？</p>
+  <p>本课新文件直接放在 <code>com.yourname.demo</code> 下（和现有文件保持一致）。真实项目通常按层建子包：<code>controller/</code>、<code>service/</code>、<code>mapper/</code>、<code>entity/</code> -- 对应你前端的 <code>src/components/</code>、<code>src/stores/</code>、<code>src/api/</code>。项目小时平铺即可，类多了再分包不迟。</p>
+</div>
+
+<div class="quiz">
+  <h3>小测验</h3>
+  <p class="quiz-question">"新增用户前检查邮箱是否重复"这类业务逻辑，应该放在哪一层？</p>
+  <ul class="quiz-options">
+    <li class="quiz-option" onclick="checkAnswer(this, false)">Controller 层 -- 它最先收到请求</li>
+    <li class="quiz-option" onclick="checkAnswer(this, true)">Service 层 -- 业务规则的归属地</li>
+    <li class="quiz-option" onclick="checkAnswer(this, false)">Mapper 层 -- 离数据库最近查重最快</li>
+    <li class="quiz-option" onclick="checkAnswer(this, false)">Entity 类里 -- 数据自己的规则自己管</li>
+  </ul>
+  <div class="quiz-feedback" id="quiz-feedback"></div>
+</div>
+
+<div class="quiz">
+  <h3>小测验</h3>
+  <p class="quiz-question">@Service 注解的作用是什么？</p>
+  <ul class="quiz-options">
+    <li class="quiz-option" onclick="checkAnswer2(this, false)">把这个类标记为对外提供 HTTP 接口</li>
+    <li class="quiz-option" onclick="checkAnswer2(this, true)">让 Spring 扫描并为它创建实例放进容器，供其他类注入</li>
+    <li class="quiz-option" onclick="checkAnswer2(this, false)">自动为这个类生成全部业务方法的实现</li>
+    <li class="quiz-option" onclick="checkAnswer2(this, false)">把这个类注册为数据库表对应的实体</li>
+  </ul>
+  <div class="quiz-feedback" id="quiz-feedback-2"></div>
+</div>
+
+<div class="quiz">
+  <h3>小测验</h3>
+  <p class="quiz-question">UserServiceImpl 继承 ServiceImpl&lt;UserMapper, User&gt; 之后，获得了什么？</p>
+  <ul class="quiz-options">
+    <li class="quiz-option" onclick="checkAnswer3(this, false)">只是代码风格约定，没有实际功能</li>
+    <li class="quiz-option" onclick="checkAnswer3(this, false)">自动生成了 Controller 层的 HTTP 接口</li>
+    <li class="quiz-option" onclick="checkAnswer3(this, true)">IService 自带的全套 CRUD 方法，内部自动调用 UserMapper</li>
+    <li class="quiz-option" onclick="checkAnswer3(this, false)">数据库连接池和事务管理能力</li>
+  </ul>
+  <div class="quiz-feedback" id="quiz-feedback-3"></div>
+</div>
+
+<h2>推荐阅读</h2>
+<p>主资源：<a href="https://baomidou.com/guides/data-interface/" target="_blank">MyBatis Plus 官方文档 - 持久层接口（IService / Service CRUD）</a></p>
+<p>参考：<a href="https://martinfowler.com/eaaCatalog/serviceLayer.html" target="_blank">Martin Fowler - Service Layer 模式（企业应用架构模式目录）</a></p>
+<p>参考：<a href="https://docs.spring.io/spring-framework/reference/core/beans/introduction.html" target="_blank">Spring 官方文档 - IoC 容器与依赖注入</a></p>
+<p>本地参考：<a href="../reference/mybatis-plus-cheatsheet.html">MyBatis Plus 速查表</a> | <a href="../reference/glossary.html">术语表</a></p>
+
+<div class="lesson-nav">
+  <a href="0008-frontend-backend-integration.html"><- 上一课：前后端联调</a>
+  <a href="0010-global-exception-handling.html">下一课：全局异常处理 -></a>
+</div>
+
+<div class="footer">
+  <p>有任何不清楚的地方？直接问我！我是你的 Java 后端老师，随时帮你解决疑问。</p>
+</div>
+
+<script>
+function checkAnswer(el, isCorrect) {
+  var options = el.parentNode.querySelectorAll('.quiz-option');
+  var feedback = document.getElementById('quiz-feedback');
+  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
+  if (isCorrect) {
+    el.classList.add('correct');
+    feedback.className = 'quiz-feedback show correct';
+    feedback.textContent = '正确！业务规则放 Service 层：可以被多个 Controller / 接口复用，不依赖 HTTP 所以容易测试，Controller 保持清爽只负责收发。就像你把业务逻辑放 Pinia store 而不是组件事件里。';
+  } else {
+    el.classList.add('incorrect');
+    feedback.className = 'quiz-feedback show incorrect';
+    feedback.textContent = '不对。Controller 只管 HTTP 交互，Mapper 只做数据访问，Entity 是数据载体。业务规则放 Service 层才能被复用和测试 -- 想想你的 Pinia store actions。';
+  }
+}
+
+function checkAnswer2(el, isCorrect) {
+  var options = el.parentNode.querySelectorAll('.quiz-option');
+  var feedback = document.getElementById('quiz-feedback-2');
+  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
+  if (isCorrect) {
+    el.classList.add('correct');
+    feedback.className = 'quiz-feedback show correct';
+    feedback.textContent = '正确！@Service 让 Spring 启动时扫描这个类，创建一个实例放进容器（默认单例），之后 Controller 通过构造器注入就能拿到它。类比 Vue 的 app.provide() 注册 + inject() 取用。@Service 不会生成任何方法实现，实现靠继承 ServiceImpl 获得。';
+  } else {
+    el.classList.add('incorrect');
+    feedback.className = 'quiz-feedback show incorrect';
+    feedback.textContent = '不对。提供 HTTP 接口是 @RestController 的职责；@Service 也不会自动生成方法实现。它的唯一作用是让 Spring 把这个类的实例注册进容器，供依赖注入使用。';
+  }
+}
+
+function checkAnswer3(el, isCorrect) {
+  var options = el.parentNode.querySelectorAll('.quiz-option');
+  var feedback = document.getElementById('quiz-feedback-3');
+  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
+  if (isCorrect) {
+    el.classList.add('correct');
+    feedback.className = 'quiz-feedback show correct';
+    feedback.textContent = '正确！ServiceImpl<UserMapper, User> 帮你实现了 IService 的全部方法（save/getById/page/count 等），内部自动调用泛型指定的 UserMapper。你只需写自定义业务方法，通用 CRUD 全部白嫖 -- 和 UserMapper extends BaseMapper 是同一个套路。';
+  } else {
+    el.classList.add('incorrect');
+    feedback.className = 'quiz-feedback show incorrect';
+    feedback.textContent = '不对。继承 ServiceImpl 获得的是 IService 自带的全套 CRUD 方法实现（save/getById/page 等），内部帮你调用 UserMapper。它不生成 HTTP 接口，也不管连接池 -- 那是 Spring Boot 自动配置的事。';
+  }
+}
+</script>
+
+</body>
+</html>

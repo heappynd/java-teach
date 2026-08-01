@@ -40,6 +40,12 @@
 8. CRUD 完整实现（MyBatis Plus BaseMapper）
 9. 前后端联调（Vue3 + Spring Boot）
 
+工程化进阶阶段（第 9 课起，已按序推进）：
+10. Service 层与依赖注入（第 9 课，已完成）
+11. 全局异常处理（@RestControllerAdvice，解决 Service 抛异常返回 500 HTML 的问题）
+12. 参数校验（Bean Validation）
+13. 统一响应格式 / 接口文档（待定）
+
 ## JDK 8 兼容性标注
 
 用户要求：课程中使用的 JDK 9+ 特性需标注 JDK 8 不支持，并给出 JDK 8 替代写法。
@@ -47,3 +53,4 @@
 - 第 4 课：`Map.of()`（JDK 9+）-> JDK 8 用 `HashMap` + `put()`
 - 第 5 课：`record`（JDK 14+）-> JDK 8 用普通类 + Lombok；`List.of()`（JDK 9+）-> JDK 8 用 `Arrays.asList()`
 - 第 7 课：LambdaQueryWrapper / Page / 方法引用均为 JDK 8 原生特性，无兼容性问题。分页插件依赖差异：JDK 17+ 用 `mybatis-plus-jsqlparser`，JDK 8 用 `mybatis-plus-jsqlparser-4.9`
+- 第 9 课：接口、继承、注解、构造器注入均为 Java/Spring 早期特性，IService / ServiceImpl 在 JDK 8（Spring Boot 2.x）同样可用，无兼容性问题
