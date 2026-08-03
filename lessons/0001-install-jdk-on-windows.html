@@ -43,20 +43,20 @@
     <th>推荐场景</th>
   </tr>
   <tr>
-    <td>JDK 21</td>
-    <td>LTS（最新）</td>
-    <td>新项目首选，Spring Boot 4.x 完美支持</td>
-  </tr>
-  <tr>
     <td>JDK 17</td>
     <td>LTS</td>
-    <td>企业项目常见，Spring Boot 3.x 最低要求</td>
+    <td>新项目首选，Spring Boot 3.x/4.x 最低要求，生态最成熟</td>
+  </tr>
+  <tr>
+    <td>JDK 21</td>
+    <td>LTS（最新）</td>
+    <td>可选，部分新项目采用</td>
   </tr>
 </table>
 
 <div class="callout callout-info">
-  <p class="callout-title">本课程使用 JDK 21</p>
-  <p>Spring Boot 最新版（4.x）支持 JDK 17 和 21。我们选 21，它是最新 LTS 版本。</p>
+  <p class="callout-title">本课程使用 JDK 17</p>
+  <p>Spring Boot 最新版（4.x）支持 JDK 17 和 21。我们选 17，它是生态最成熟、企业采用率最高的 LTS 版本。</p>
 </div>
 
 <h2>开始安装</h2>
@@ -67,7 +67,7 @@
   <h3>下载 JDK 安装包</h3>
   <p>打开 <a href="https://adoptium.net/temurin/releases/" target="_blank">Adoptium 下载页面</a>，选择：</p>
   <ul>
-    <li><strong>Version</strong>: 21 - LTS</li>
+    <li><strong>Version</strong>: 17 - LTS</li>
     <li><strong>Operating System</strong>: Windows</li>
     <li><strong>Architecture</strong>: x64（大部分 Windows 电脑选这个）</li>
   </ul>
@@ -99,16 +99,16 @@
   <p>安装完成后，<strong>关闭所有已打开的终端窗口</strong>（环境变量更新需要重启终端），然后打开一个新的 PowerShell 或 CMD 窗口，输入：</p>
   <div class="terminal">
 <span class="prompt">PS C:\&gt;</span> java -version<br>
-<span class="output">openjdk version "21.0.x" 2025-xx-xx<br>
-OpenJDK Runtime Environment Temurin-21.0.x (build 21.0.x+x)<br>
-OpenJDK Runtime Environment Temurin-21.0.x (build 21.0.x+x, mixed mode, sharing)</span>
+<span class="output">openjdk version "17.0.x" 2024-xx-xx<br>
+OpenJDK Runtime Environment Temurin-17.0.x (build 17.0.x+x)<br>
+OpenJDK Runtime Environment Temurin-17.0.x (build 17.0.x+x, mixed mode, sharing)</span>
   </div>
   <p>再输入：</p>
   <div class="terminal">
 <span class="prompt">PS C:\&gt;</span> javac -version<br>
-<span class="output">javac 21.0.x</span>
+<span class="output">javac 17.0.x</span>
   </div>
-  <p>如果两条命令都输出了版本号（21 开头），恭喜你，JDK 安装成功！</p>
+  <p>如果两条命令都输出了版本号（17 开头），恭喜你，JDK 安装成功！</p>
   <ul>
     <li><code>java</code> = 运行 Java 程序的命令（相当于 <code>node</code>）</li>
     <li><code>javac</code> = 编译 Java 代码的命令（相当于 <code>tsc</code>）</li>
@@ -123,9 +123,9 @@ OpenJDK Runtime Environment Temurin-21.0.x (build 21.0.x+x, mixed mode, sharing)
     <li>点击"环境变量"按钮</li>
     <li>在"系统变量"中找到 <code>Path</code>，点"编辑"</li>
     <li>点"新建"，添加 JDK 的 bin 目录路径，通常是：<br>
-      <code>C:\Program Files\Eclipse Adoptium\jdk-21.x.x-hotspot\bin</code></li>
+      <code>C:\Program Files\Eclipse Adoptium\jdk-17.x.x-hotspot\bin</code></li>
     <li>在"系统变量"中点"新建"，添加 <code>JAVA_HOME</code>，值为 JDK 安装目录（不含 bin）：<br>
-      <code>C:\Program Files\Eclipse Adoptium\jdk-21.x.x-hotspot</code></li>
+      <code>C:\Program Files\Eclipse Adoptium\jdk-17.x.x-hotspot</code></li>
     <li>确定保存，重启终端，再次验证</li>
   </ol>
 </div>

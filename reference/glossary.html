@@ -279,9 +279,19 @@
     <td>编译输出目录。Maven 编译后的 .class 文件和打包的 .jar 都在这里。</td>
   </tr>
   <tr>
-    <td><strong>Package</strong></td>
+    <td><strong>Package</strong><br>包</td>
     <td>文件夹 / 命名空间</td>
-    <td>Java 的代码组织单位，对应文件系统的目录。如 <code>com.example.demo</code> 对应 <code>com/example/demo/</code> 目录。</td>
+    <td>Java 的代码组织单位，对应文件系统的目录。如 <code>com.example.demo.controller</code> 对应 <code>com/example/demo/controller/</code> 目录。<code>package</code> 声明必须与目录路径一致。标准 Spring Boot 项目按层分包：<code>controller</code>、<code>service</code>、<code>mapper</code>、<code>entity</code>、<code>config</code>。详见 <a href="../lessons/0010-java-packages-and-structure.html">第 10 课</a>。</td>
+  </tr>
+  <tr>
+    <td><strong>Import</strong></td>
+    <td>import 语句</td>
+    <td>引入其他包中的类。同包内的类互相使用不需要 import，跨包必须 import。类比前端的 <code>import UserCard from './components/UserCard.vue'</code>。</td>
+  </tr>
+  <tr>
+    <td><strong>@ComponentScan</strong></td>
+    <td>递归目录扫描</td>
+    <td>Spring 自动扫描组件的机制。从启动类所在包开始，递归扫描所有子包。这就是启动类必须放根包的原因。</td>
   </tr>
 </table>
 

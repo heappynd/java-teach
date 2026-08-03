@@ -225,9 +225,9 @@ mybatis-plus:
   <p>本节 Entity 代码使用普通类 + getter/setter，<strong>完全兼容 JDK 8</strong>。MyBatis Plus 的要求恰好与 JDK 8 一致 -- 不存在兼容性问题。</p>
 </div>
 
-<p>将 <code>User.java</code> 替换为：</p>
+<p>将 <code>entity</code> 包下的 <code>User.java</code> 替换为：</p>
 
-<pre><code>package com.yourname.demo;
+<pre><code>package com.yourname.demo.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
@@ -289,10 +289,11 @@ public class User {
 
 <h2>第六步：创建 UserMapper</h2>
 
-<p>新建 <code>UserMapper.java</code>：</p>
+<p>在 <code>mapper</code> 包下新建 <code>UserMapper.java</code>：</p>
 
-<pre><code>package com.yourname.demo;
+<pre><code>package com.yourname.demo.mapper;
 
+import com.yourname.demo.entity.User;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 
 public interface UserMapper extends BaseMapper&lt;User&gt; {
@@ -302,7 +303,7 @@ public interface UserMapper extends BaseMapper&lt;User&gt; {
 <p>在主启动类上加 <code>@MapperScan</code>：</p>
 
 <pre><code>@SpringBootApplication
-@MapperScan("com.yourname.demo")  // 告诉 MyBatis Plus 去哪找 Mapper
+@MapperScan("com.yourname.demo")  // 扫描 com.yourname.demo 及其子包（含 mapper 包）
 public class DemoApplication {
     public static void main(String[] args) {
         SpringApplication.run(DemoApplication.class, args);
@@ -366,10 +367,12 @@ userMapper.deleteById(id)</code></pre>
 
 <h2>第七步：重构 UserController</h2>
 
-<p>把内存 List 版本换成数据库版本。替换 <code>UserController.java</code>：</p>
+<p>把内存 List 版本换成数据库版本。替换 <code>controller</code> 包下的 <code>UserController.java</code>：</p>
 
-<pre><code>package com.yourname.demo;
+<pre><code>package com.yourname.demo.controller;
 
+import com.yourname.demo.entity.User;
+import com.yourname.demo.mapper.UserMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;

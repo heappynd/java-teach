@@ -189,8 +189,8 @@ User user = new User(
 
 <div class="step">
   <h3>创建 User Record</h3>
-  <p>在 <code>com.yourname.demo</code> 包下新建 <code>User.java</code>：</p>
-  <pre><code>package com.yourname.demo;
+  <p>在 <code>entity</code> 包下（<code>com.yourname.demo.entity</code>）新建 <code>User.java</code>：</p>
+  <pre><code>package com.yourname.demo.entity;
 
 public record User(
     Long id,
@@ -207,9 +207,10 @@ public record User(
 
 <div class="step">
   <h3>创建 UserController</h3>
-  <p>新建 <code>UserController.java</code>，先用内存 List 存数据：</p>
-  <pre><code>package com.yourname.demo;
+  <p>在 <code>controller</code> 包下新建 <code>UserController.java</code>，先用内存 List 存数据：</p>
+  <pre><code>package com.yourname.demo.controller;
 
+import com.yourname.demo.entity.User;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;

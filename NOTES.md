@@ -42,9 +42,10 @@
 
 工程化进阶阶段（第 9 课起，已按序推进）：
 10. Service 层与依赖注入（第 9 课，已完成）
-11. 全局异常处理（@RestControllerAdvice，解决 Service 抛异常返回 500 HTML 的问题）
-12. 参数校验（Bean Validation）
-13. 统一响应格式 / 接口文档（待定）
+11. Java 包与项目结构（第 10 课，已完成 -- 补充分包教学）
+12. 全局异常处理（@RestControllerAdvice，解决 Service 抛异常返回 500 HTML 的问题）
+13. 参数校验（Bean Validation）
+14. 统一响应格式 / 接口文档（待定）
 
 ## JDK 8 兼容性标注
 
@@ -54,3 +55,12 @@
 - 第 5 课：`record`（JDK 14+）-> JDK 8 用普通类 + Lombok；`List.of()`（JDK 9+）-> JDK 8 用 `Arrays.asList()`
 - 第 7 课：LambdaQueryWrapper / Page / 方法引用均为 JDK 8 原生特性，无兼容性问题。分页插件依赖差异：JDK 17+ 用 `mybatis-plus-jsqlparser`，JDK 8 用 `mybatis-plus-jsqlparser-4.9`
 - 第 9 课：接口、继承、注解、构造器注入均为 Java/Spring 早期特性，IService / ServiceImpl 在 JDK 8（Spring Boot 2.x）同样可用，无兼容性问题
+- 第 10 课：Java 包机制是 JDK 1.0 特性，与 JDK 版本无关，完全兼容
+
+## MyBatis Plus 版本差异备忘
+
+MyBatis Plus 3.5.17（Spring Boot 4 starter）中部分类的包路径发生了变化：
+- `IService`: `com.baomidou.mybatisplus.extension.service` -> `com.baomidou.mybatisplus.spring.service`
+- `ServiceImpl`: `com.baomidou.mybatisplus.extension.service.impl` -> `com.baomidou.mybatisplus.spring.service.impl`
+- `LambdaQueryWrapper`、`Page`、`BaseMapper` 等其他类路径未变
+- JDK 8（Spring Boot 2.x）仍使用旧的 `extension.service` 路径

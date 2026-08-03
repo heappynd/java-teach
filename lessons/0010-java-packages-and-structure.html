@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>第 10 课：Java 包与项目结构 - Java 后端学习</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<h1>第 10 课：Java 包与项目结构</h1>
+<p class="lesson-meta">预计用时：20 分钟 | 难度：入门 | 前置知识：<a href="0009-service-layer.html">第 9 课 Service 层</a></p>
+
+<h2>目标：把散落的类整理进包</h2>
+
+<p>跟着课程走到这里，你的 <code>com.yourname.demo</code> 包下已经堆了五六个类：</p>
+
+<pre><code>src/main/java/com/yourname/demo/
+├── DemoApplication.java       ← 启动类
+├── UserController.java        ← 控制器
+├── User.java                  ← 实体
+├── UserMapper.java            ← 数据访问
+├── MybatisPlusConfig.java     ← 配置
+├── UserService.java           ← 业务接口（第 9 课）
+└── UserServiceImpl.java       ← 业务实现（第 9 课）</code></pre>
+
+<p>项目小的时候这样平铺没问题。但类一多，就和你前端把所有 <code>.vue</code> 文件全扔 <code>src/</code> 根目录一样 -- 找起来费劲，职责边界模糊。这节课我们给它们<strong>分包</strong>。</p>
+
+<div class="callout callout-info">
+  <p class="callout-title">本课不引入新依赖</p>
+  <p>这节课纯做项目结构重组，不改任何业务代码，不改 pom.xml。重组后项目行为完全不变 -- 这就是<strong>重构</strong>的本质。</p>
+</div>
+
+<h2>什么是包？</h2>
+
+<p>你前端项目里 <code>src/</code> 下有 <code>components/</code>、<code>stores/</code>、<code>api/</code>、<code>utils/</code> 等文件夹。Java 的 <strong>package</strong>（包）就是同一回事：<strong>文件夹 + 命名空间</strong>。</p>
+
+<div class="compare-grid">
+  <div class="compare-card frontend">
+    <h4>前端（你已熟悉）</h4>
+    <pre><code>src/
+├── components/
+│   └── UserCard.vue
+├── stores/
+│   └── user.ts
+├── api/
+│   └── user.ts
+└── utils/
+    └── format.ts</code></pre>
+    <p>文件夹即模块边界，import 路径对应目录</p>
+  </div>
+  <div class="compare-card backend">
+    <h4>后端（今天学的）</h4>
+    <pre><code>com/yourname/demo/
+├── controller/
+│   └── UserController.java
+├── service/
+│   └── UserService.java
+├── mapper/
+│   └── UserMapper.java
+├── entity/
+│   └── User.java
+└── config/
+    └── MybatisPlusConfig.java</code></pre>
+    <p>包即目录，package 声明对应目录路径</p>
+  </div>
+</div>
+
+<table>
+  <tr>
+    <th>规则</th>
+    <th>说明</th>
+    <th>前端类比</th>
+  </tr>
+  <tr>
+    <td>包名 = 目录路径</td>
+    <td><code>com.yourname.demo.controller</code> 对应 <code>com/yourname/demo/controller/</code> 目录</td>
+    <td><code>./src/components</code> 对应 <code>src/components/</code> 文件夹</td>
+  </tr>
+  <tr>
+    <td>package 声明必须在文件第一行</td>
+    <td>每个 <code>.java</code> 文件开头必须声明自己属于哪个包（除入口外）</td>
+    <td>不需要 -- JS/TS 没有这个要求</td>
+  </tr>
+  <tr>
+    <td>跨包引用要 import</td>
+    <td>用其他包的类必须 <code>import com.yourname.demo.entity.User;</code></td>
+    <td><code>import UserCard from './components/UserCard.vue'</code></td>
+  </tr>
+  <tr>
+    <td>同包内不用 import</td>
+    <td>同一个包里的类互相使用，不需要 import</td>
+    <td>同文件夹下的文件可以省略路径</td>
+  </tr>
+</table>
+
+<h2>标准 Spring Boot 包结构</h2>
+
+<p>Java 后端社区有一套约定俗成的分包方式，几乎所有 Spring Boot 项目都遵循：</p>
+
+<table>
+  <tr>
+    <th>包名</th>
+    <th>放什么</th>
+    <th>前端类比</th>
+  </tr>
+  <tr>
+    <td><code>controller</code></td>
+    <td><code>@RestController</code> 类 -- 处理 HTTP 请求</td>
+    <td><code>pages/</code> 或 <code>views/</code> -- 页面/路由组件</td>
+  </tr>
+  <tr>
+    <td><code>service</code></td>
+    <td><code>@Service</code> 类 -- 业务逻辑</td>
+    <td><code>stores/</code> 或 <code>composables/</code> -- 业务状态与逻辑</td>
+  </tr>
+  <tr>
+    <td><code>mapper</code></td>
+    <td><code>BaseMapper</code> 接口 -- 数据库访问</td>
+    <td><code>api/</code> -- axios 请求封装</td>
+  </tr>
+  <tr>
+    <td><code>entity</code></td>
+    <td><code>@TableName</code> 类 -- 数据库表映射</td>
+    <td><code>types/</code> 或 <code>models/</code> -- TypeScript 类型定义</td>
+  </tr>
+  <tr>
+    <td><code>config</code></td>
+    <td><code>@Configuration</code> 类 -- 框架配置</td>
+    <td><code>plugins/</code> 或 <code>middleware/</code> -- 框架级配置</td>
+  </tr>
+  <tr>
+    <td><strong>根包</strong></td>
+    <td><code>DemoApplication</code> -- 启动类，放在根包</td>
+    <td><code>main.ts</code> -- 入口文件放 <code>src/</code> 根目录</td>
+  </tr>
+</table>
+
+<div class="callout callout-tip">
+  <p class="callout-title">为什么启动类放根包？</p>
+  <p><code>@SpringBootApplication</code> 内含 <code>@ComponentScan</code>，默认从启动类所在的包开始扫描，<strong>包括所有子包</strong>。启动类放在根包 <code>com.yourname.demo</code>，Spring 就能自动发现 <code>controller/</code>、<code>service/</code>、<code>config/</code> 等子包里的所有组件。如果把启动类放深了，外面的类就扫不到。</p>
+</div>
+
+<h2>在 IDEA 中创建包</h2>
+
+<div class="steps-container">
+
+<div class="step">
+  <h3>创建子包</h3>
+  <p>在 IDEA 的项目面板（左侧）中，右键 <code>com.yourname.demo</code> 包 -> <strong>New -> Package</strong>：</p>
+  <div class="terminal">
+<span class="comment"># 输入包名</span>
+controller
+  </div>
+  <p>回车后，你会看到 <code>com.yourname.demo</code> 下多了一个 <code>controller</code> 子包。</p>
+  <p>重复操作，依次创建 <code>entity</code>、<code>mapper</code>、<code>config</code>、<code>service</code>。</p>
+</div>
+
+<div class="step">
+  <h3>创建好后的结构</h3>
+  <pre><code>src/main/java/com/yourname/demo/
+├── DemoApplication.java
+├── controller/          ← 刚创建的空包
+├── entity/
+├── mapper/
+├── config/
+└── service/</code></pre>
+  <p>此时包都是空的，下一步把类搬进去。</p>
+</div>
+
+</div>
+
+<h2>把类移动到包中</h2>
+
+<p>IDEA 提供了<strong>自动重构</strong>功能 -- 移动类时会自动更新 <code>package</code> 声明和所有引用处的 <code>import</code>。你不需要手动改任何文件。</p>
+
+<div class="steps-container">
+
+<div class="step">
+  <h3>方法一：拖拽（最简单）</h3>
+  <p>在项目面板中，直接把 <code>User.java</code> 拖到 <code>entity</code> 包上。IDEA 会弹出确认框：</p>
+  <div class="terminal">
+<span class="comment">Move class 'User' to package 'com.yourname.demo.entity'?</span>
+<span class="comment">✓ Search for references  ← 确保勾选，自动更新所有 import</span>
+
+[Refactor] [Cancel]
+  </div>
+  <p>点击 <strong>Refactor</strong>。IDEA 会：</p>
+  <ul>
+    <li>把文件物理移动到 <code>entity/</code> 目录</li>
+    <li>把文件内的 <code>package com.yourname.demo;</code> 改成 <code>package com.yourname.demo.entity;</code></li>
+    <li>在所有引用 <code>User</code> 的文件中自动添加 <code>import com.yourname.demo.entity.User;</code></li>
+  </ul>
+</div>
+
+<div class="step">
+  <h3>方法二：Move 重构（快捷键 F6）</h3>
+  <p>选中 <code>UserMapper.java</code>，按 <code>F6</code>（或右键 -> Refactor -> Move）：</p>
+  <div class="terminal">
+<span class="comment">Move Members to Package</span>
+To package: <span class="prompt">com.yourname.demo.mapper</span>
+<span class="comment">✓ Search for references</span>
+  </div>
+  <p>点击 <strong>Refactor</strong>，效果与拖拽相同。</p>
+</div>
+
+<div class="step">
+  <h3>逐个移动所有类</h3>
+  <p>按下面的对应关系，把每个类移到对应的包：</p>
+  <table>
+    <tr>
+      <th>类</th>
+      <th>移到</th>
+    </tr>
+    <tr>
+      <td><code>UserController</code></td>
+      <td><code>controller</code></td>
+    </tr>
+    <tr>
+      <td><code>User</code></td>
+      <td><code>entity</code></td>
+    </tr>
+    <tr>
+      <td><code>UserMapper</code></td>
+      <td><code>mapper</code></td>
+    </tr>
+    <tr>
+      <td><code>MybatisPlusConfig</code></td>
+      <td><code>config</code></td>
+    </tr>
+    <tr>
+      <td><code>UserService</code> + <code>UserServiceImpl</code></td>
+      <td><code>service</code></td>
+    </tr>
+    <tr>
+      <td><code>DemoApplication</code></td>
+      <td><strong>不动</strong> -- 留在根包</td>
+    </tr>
+  </table>
+</div>
+
+<div class="step">
+  <h3>移动后的结构</h3>
+  <pre><code>src/main/java/com/yourname/demo/
+├── DemoApplication.java           ← 根包（启动类）
+├── controller/
+│   └── UserController.java
+├── entity/
+│   └── User.java
+├── mapper/
+│   └── UserMapper.java
+├── config/
+│   └── MybatisPlusConfig.java
+└── service/
+    ├── UserService.java
+    └── UserServiceImpl.java</code></pre>
+  <p>干净清爽 -- 一眼就知道每个类干什么，和前端项目的 <code>src/</code> 结构一样清晰。</p>
+</div>
+
+</div>
+
+<h2>package 声明与 import 的变化</h2>
+
+<p>移动之后，每个类的 <code>package</code> 声明变了，跨包引用需要加 <code>import</code>。IDEA 已经帮你自动改好了，但你需要<strong>理解原理</strong>。</p>
+
+<p>以 <code>UserController</code> 为例，移动<strong>前</strong>：</p>
+
+<pre><code>package com.yourname.demo;          ← 所有类都在同一个包
+
+import org.springframework.web.bind.annotation.*;
+// 不需要 import User -- 同包内直接用
+
+@RestController
+public class UserController {
+    private UserMapper userMapper;  ← 同包，不用 import</code></pre>
+
+<p>移动<strong>后</strong>：</p>
+
+<pre><code>package com.yourname.demo.controller;  ← 包名变了
+
+import com.yourname.demo.entity.User;       ← 跨包，要 import
+import com.yourname.demo.mapper.UserMapper;  ← 跨包，要 import
+import com.yourname.demo.service.UserService;← 跨包，要 import
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+public class UserController {
+    private UserService userService;  ← 用 import 引入的类型</code></pre>
+
+<div class="callout callout-warn">
+  <p class="callout-title">关键规则</p>
+  <p><strong>package 声明必须与目录路径完全一致。</strong>如果 <code>UserController.java</code> 在 <code>controller/</code> 目录下，但文件内写的是 <code>package com.yourname.demo;</code>，Java 编译器直接报错。</p>
+  <p>这是 Java 和前端的一个显著区别 -- JS/TS 文件放哪个目录不影响其内容，但 Java 文件的 <code>package</code> 声明必须和目录严格对应。</p>
+</div>
+
+<h2>@MapperScan 与子包扫描</h2>
+
+<p>第 6 课在 <code>DemoApplication</code> 上加了 <code>@MapperScan("com.yourname.demo")</code>。现在 <code>UserMapper</code> 搬到了 <code>com.yourname.demo.mapper</code> 子包，<code>@MapperScan</code> 要改吗？</p>
+
+<p><strong>不用改。</strong> <code>@MapperScan</code> 扫描的是指定包<strong>及其所有子包</strong>，就像前端 <code>import.meta.glob('./src/**/*.vue')</code> 递归匹配子目录一样：</p>
+
+<table>
+  <tr>
+    <th>写法</th>
+    <th>扫描范围</th>
+    <th>能否找到 UserMapper</th>
+  </tr>
+  <tr>
+    <td><code>@MapperScan("com.yourname.demo")</code></td>
+    <td>根包 + 所有子包</td>
+    <td>能 -- mapper 是子包</td>
+  </tr>
+  <tr>
+    <td><code>@MapperScan("com.yourname.demo.mapper")</code></td>
+    <td>仅 mapper 包</td>
+    <td>能 -- 精确指定</td>
+  </tr>
+  <tr>
+    <td><code>@MapperScan("com.yourname.demo.controller")</code></td>
+    <td>仅 controller 包</td>
+    <td>不能 -- Mapper 不在这</td>
+  </tr>
+</table>
+
+<div class="callout callout-tip">
+  <p class="callout-title">同理：@ComponentScan 也是递归的</p>
+  <p><code>@SpringBootApplication</code> 内含的 <code>@ComponentScan</code> 从启动类所在包开始递归扫描。所以 <code>@RestController</code>、<code>@Service</code>、<code>@Configuration</code> 等注解标记的类，无论放在哪个子包，Spring 都能自动发现。<strong>这就是启动类必须放根包的原因。</strong></p>
+</div>
+
+<p>如果你把 <code>@MapperScan</code> 从 <code>DemoApplication</code> 搬到了 <code>MybatisPlusConfig</code>（两者效果相同），也不需要改扫描路径 -- <code>@MapperScan</code> 的扫描与它写在哪个类上无关，只看路径参数。</p>
+
+<h2>验证：重组后一切照常</h2>
+
+<div class="steps-container">
+
+<div class="step">
+  <h3>运行项目</h3>
+  <p>按 <code>Shift + F10</code> 运行 <code>DemoApplication</code>。如果 IDEA 的重构正确执行了，项目应该<strong>零报错启动</strong>。</p>
+  <div class="callout callout-warn">
+    <p class="callout-title">如果报错</p>
+    <p>常见问题：<code>Cannot find symbol User</code> 或 <code>Cannot find symbol UserMapper</code>。说明移动时 IDEA 没有自动更新 import。手动在报错的文件顶部加上对应的 <code>import com.yourname.demo.entity.User;</code> 即可。按 <code>Alt + Enter</code> 让 IDEA 自动修复。</p>
+  </div>
+</div>
+
+<div class="step">
+  <h3>测试所有接口</h3>
+  <p>用浏览器或 IDEA HTTP Client 测试，行为应该和重组前<strong>完全一致</strong>：</p>
+  <ul>
+    <li><code>GET /users?page=1&amp;size=5</code> -- 分页列表正常</li>
+    <li><code>POST /users</code> -- 创建用户正常</li>
+    <li><code>DELETE /users/1</code> -- 删除正常</li>
+  </ul>
+  <p>重构的定义：<strong>不改变外部行为，只调整内部结构。</strong></p>
+</div>
+
+</div>
+
+<div class="callout callout-jdk8">
+  <p class="callout-title">完全兼容</p>
+  <p>Java 包机制是 JDK 1.0 就有的基础特性，与 JDK 版本无关。本课所有内容在 JDK 8 下完全相同。</p>
+</div>
+
+<h2>以后新建类时</h2>
+
+<p>分包之后，新建类时要注意<strong>选对包</strong>。在 IDEA 中：</p>
+
+<ol>
+  <li>右键目标包（如 <code>controller</code>）-> <strong>New -> Java Class</strong></li>
+  <li>输入类名，IDEA 自动生成正确的 <code>package</code> 声明</li>
+</ol>
+
+<p>如果右键的是 <code>com.yourname.demo</code> 根包新建类，<code>package</code> 声明就是 <code>com.yourname.demo</code>；如果右键的是 <code>controller</code> 子包，声明就是 <code>com.yourname.demo.controller</code>。<strong>IDEA 根据你右键的位置自动生成</strong>，不需要手写。</p>
+
+<div class="callout callout-tip">
+  <p class="callout-title">Alt + Enter 自动补 import</p>
+  <p>在代码中使用其他包的类时（比如在 Controller 里用 <code>User</code>），如果没 import，类名会标红。按 <code>Alt + Enter</code> -> <strong>Import Class</strong>，IDEA 自动添加正确的 import 语句。详见 <a href="../reference/idea-shortcuts.html">IDEA 快捷键速查表</a>。</p>
+</div>
+
+<div class="quiz">
+  <h3>小测验</h3>
+  <p class="quiz-question">Java 的 package 声明必须与什么保持一致？</p>
+  <ul class="quiz-options">
+    <li class="quiz-option" onclick="checkAnswer(this, false)">类名必须与文件名相同</li>
+    <li class="quiz-option" onclick="checkAnswer(this, true)">包名必须与目录路径一致</li>
+    <li class="quiz-option" onclick="checkAnswer(this, false)">包名必须与项目名相同</li>
+    <li class="quiz-option" onclick="checkAnswer(this, false)">类名必须与包名相同</li>
+  </ul>
+  <div class="quiz-feedback" id="quiz-feedback"></div>
+</div>
+
+<div class="quiz">
+  <h3>小测验</h3>
+  <p class="quiz-question">@MapperScan("com.yourname.demo") 能扫描到子包中的 Mapper 吗？</p>
+  <ul class="quiz-options">
+    <li class="quiz-option" onclick="checkAnswer2(this, false)">不能只扫描当前包的类</li>
+    <li class="quiz-option" onclick="checkAnswer2(this, true)">能扫描当前包及所有子包</li>
+    <li class="quiz-option" onclick="checkAnswer2(this, false)">不能需要单独配置子包</li>
+    <li class="quiz-option" onclick="checkAnswer2(this, false)">不能子包需要额外注解</li>
+  </ul>
+  <div class="quiz-feedback" id="quiz-feedback-2"></div>
+</div>
+
+<div class="quiz">
+  <h3>小测验</h3>
+  <p class="quiz-question">DemoApplication 启动类应该放在哪个位置？</p>
+  <ul class="quiz-options">
+    <li class="quiz-option" onclick="checkAnswer3(this, false)">放在 controller 子包里面</li>
+    <li class="quiz-option" onclick="checkAnswer3(this, false)">放在最深层的子包里面</li>
+    <li class="quiz-option" onclick="checkAnswer3(this, true)">放在根包扫描所有子包</li>
+    <li class="quiz-option" onclick="checkAnswer3(this, false)">放在项目 pom.xml 的同级</li>
+  </ul>
+  <div class="quiz-feedback" id="quiz-feedback-3"></div>
+</div>
+
+<div class="callout callout-tip">
+  <p class="callout-title">完成本课后</p>
+  <p>你的项目从"一锅端"变成了<strong>分层分包</strong>的标准 Spring Boot 结构。以后每新建一个类，你都知道它该放哪个包。这个结构会伴随你整个 Java 后端生涯 -- 无论项目多大，分包逻辑不变。遇到任何问题随时问我！</p>
+</div>
+
+<h2>推荐阅读</h2>
+<p>主资源：<a href="https://docs.oracle.com/javase/tutorial/java/package/index.html" target="_blank">Oracle Java Tutorials - Creating and Using Packages</a></p>
+<p>参考：<a href="../reference/glossary.html">术语表 - Package 条目</a> | <a href="../reference/idea-shortcuts.html">IDEA 快捷键（F6 移动重构）</a></p>
+
+<div class="lesson-nav">
+  <a href="0009-service-layer.html"><- 上一课：Service 层</a>
+  <a href="0011-global-exception-handling.html">下一课：全局异常处理 -></a>
+</div>
+
+<div class="footer">
+  <p>有任何不清楚的地方？直接问我！我是你的 Java 后端老师，随时帮你解决疑问。</p>
+</div>
+
+<script>
+function checkAnswer(el, isCorrect) {
+  var options = el.parentNode.querySelectorAll('.quiz-option');
+  var feedback = document.getElementById('quiz-feedback');
+  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
+  if (isCorrect) {
+    el.classList.add('correct');
+    feedback.className = 'quiz-feedback show correct';
+    feedback.textContent = '正确！package 声明必须与文件所在的目录路径完全一致。com.yourname.demo.controller 对应 com/yourname/demo/controller/ 目录。这是 Java 编译器的硬性要求，不匹配会直接报错。';
+  } else {
+    el.classList.add('incorrect');
+    feedback.className = 'quiz-feedback show incorrect';
+    feedback.textContent = '不对。package 声明对应的是目录路径，不是类名或项目名。类名与文件名相同是另一个 Java 规则（public 类名必须与文件名一致），与 package 无关。';
+  }
+}
+
+function checkAnswer2(el, isCorrect) {
+  var options = el.parentNode.querySelectorAll('.quiz-option');
+  var feedback = document.getElementById('quiz-feedback-2');
+  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
+  if (isCorrect) {
+    el.classList.add('correct');
+    feedback.className = 'quiz-feedback show correct';
+    feedback.textContent = '正确！@MapperScan 扫描指定包及其所有子包，就像递归遍历目录。所以 @MapperScan("com.yourname.demo") 能找到 mapper 子包里的 UserMapper，不需要改路径。当然，写 @MapperScan("com.yourname.demo.mapper") 更精确，两者都行。';
+  } else {
+    el.classList.add('incorrect');
+    feedback.className = 'quiz-feedback show incorrect';
+    feedback.textContent = '不对。@MapperScan 是递归扫描的 -- 指定一个包，它的所有子包都会被扫描到。这和前端的 glob 匹配 ./src/**/*.vue 是同一个道理。';
+  }
+}
+
+function checkAnswer3(el, isCorrect) {
+  var options = el.parentNode.querySelectorAll('.quiz-option');
+  var feedback = document.getElementById('quiz-feedback-3');
+  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
+  if (isCorrect) {
+    el.classList.add('correct');
+    feedback.className = 'quiz-feedback show correct';
+    feedback.textContent = '正确！启动类放在根包 com.yourname.demo，@SpringBootApplication 内含的 @ComponentScan 会递归扫描所有子包（controller/、service/、mapper/ 等），自动发现所有组件。如果启动类放深了，外面的组件就扫不到。';
+  } else {
+    el.classList.add('incorrect');
+    feedback.className = 'quiz-feedback show incorrect';
+    feedback.textContent = '不对。启动类必须放在根包，这样 @ComponentScan 才能递归扫描到所有子包中的组件。放在子包里会导致其他子包中的类无法被 Spring 发现。';
+  }
+}
+</script>
+
+</body>
+</html>

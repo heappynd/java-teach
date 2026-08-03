@@ -73,21 +73,27 @@ public class HelloController {
 
 <div class="step">
   <h3>创建 Controller 类</h3>
-  <p>在 IDEA 中，右键 <code>com.yourname.demo</code> 包 -> <strong>New -> Java Class</strong>，命名为 <code>HelloController</code>。</p>
+  <p>在 IDEA 中，右键 <code>controller</code> 包（<code>com.yourname.demo.controller</code>）-> <strong>New -> Java Class</strong>，命名为 <code>HelloController</code>。</p>
   <p>目录结构会变成：</p>
   <pre><code>src/main/java/com/yourname/demo/
-├── DemoApplication.java   <-- 启动类（已有）
-└── HelloController.java   <-- 新建的控制器</code></pre>
+├── DemoApplication.java       <-- 启动类（已有）
+└── controller/
+    └── HelloController.java   <-- 新建的控制器</code></pre>
   <div class="callout callout-info">
     <p class="callout-title">什么是 Controller？</p>
     <p>Controller 就是处理 HTTP 请求的类，相当于前端 Express 里的路由处理器。前端发请求到某个 URL，Controller 负责接收并返回数据。</p>
   </div>
 </div>
 
+<div class="callout callout-info">
+  <p class="callout-title">关于包结构</p>
+  <p>本课新建的 <code>controller</code> 子包用于存放所有 API 控制器。如果还没有这个包，右键 <code>com.yourname.demo</code> -> New -> Package 创建。随着项目增长，你还会建 <code>entity</code>、<code>mapper</code>、<code>service</code> 等子包，详见 <a href="0010-java-packages-and-structure.html">第 10 课：Java 包与项目结构</a>。</p>
+</div>
+
 <div class="step">
   <h3>写第一个 GET 接口</h3>
   <p>将 <code>HelloController.java</code> 内容替换为：</p>
-  <pre><code>package com.yourname.demo;
+  <pre><code>package com.yourname.demo.controller;
 
 import org.springframework.web.bind.annotation.*;
 

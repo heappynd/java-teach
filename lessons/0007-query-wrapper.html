@@ -155,9 +155,9 @@ Content-Type: application/json
 
 <h2>第三步：配置分页拦截器</h2>
 
-<p>新建配置类 <code>MybatisPlusConfig.java</code>（与 <code>DemoApplication.java</code> 同级目录）：</p>
+<p>在 <code>config</code> 包下新建配置类 <code>MybatisPlusConfig.java</code>：</p>
 
-<pre><code>package com.yourname.demo;
+<pre><code>package com.yourname.demo.config;
 
 import com.baomidou.mybatisplus.annotation.DbType;
 import com.baomidou.mybatisplus.extension.plugins.MybatisPlusInterceptor;
@@ -537,8 +537,10 @@ public Page&lt;User&gt; getList(
 
 <p>到目前为止，<code>UserController.java</code> 完整代码如下：</p>
 
-<pre><code>package com.yourname.demo;
+<pre><code>package com.yourname.demo.controller;
 
+import com.yourname.demo.entity.User;
+import com.yourname.demo.mapper.UserMapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.beans.factory.annotation.Autowired;

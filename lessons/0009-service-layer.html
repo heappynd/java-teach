@@ -107,12 +107,13 @@
 
 <p>MyBatis Plus 不只是提供了 <code>BaseMapper</code>，还提供了一套配套的 Service 层脚手架：<code>IService</code> 接口 + <code>ServiceImpl</code> 实现类。用法和 <code>BaseMapper</code> 一样 -- 继承就自动获得全套 CRUD 方法。</p>
 
-<p>在 <code>com.yourname.demo</code> 包下（与 <code>UserController.java</code> 同目录）新建 <code>UserService.java</code>：</p>
+<p>在 <code>service</code> 包下（<code>com.yourname.demo.service</code>）新建 <code>UserService.java</code>：</p>
 
-<pre><code>package com.yourname.demo;
+<pre><code>package com.yourname.demo.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.baomidou.mybatisplus.extension.service.IService;
+import com.baomidou.mybatisplus.spring.service.IService;
+import com.yourname.demo.entity.User;
 
 public interface UserService extends IService&lt;User&gt; {
 
@@ -141,13 +142,15 @@ class UserServiceImpl implements UserService { ... }  // 实现</code></pre>
 
 <h2>第二步：创建 UserServiceImpl 实现类</h2>
 
-<p>同目录新建 <code>UserServiceImpl.java</code>：</p>
+<p>同包下新建 <code>UserServiceImpl.java</code>：</p>
 
-<pre><code>package com.yourname.demo;
+<pre><code>package com.yourname.demo.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
+import com.yourname.demo.entity.User;
+import com.yourname.demo.mapper.UserMapper;
 import org.springframework.stereotype.Service;
 
 @Service   // 告诉 Spring：扫描我，把我放进容器
@@ -188,6 +191,11 @@ const store = inject('userStore')     // ≈ 依赖注入：从容器取出使�
   <p>MyBatis Plus 的 <code>IService</code> / <code>ServiceImpl</code> 在 JDK 8 环境（Spring Boot 2.x）同样可用，只需使用对应的 starter，对照表见<a href="0006-connect-postgresql.html">第 6 课</a>。</p>
 </div>
 
+<div class="callout callout-info">
+  <p class="callout-title">注意：import 路径因版本而异</p>
+  <p>MyBatis Plus 3.5.17 的 Spring Boot 4 starter 中，<code>IService</code> 和 <code>ServiceImpl</code> 的包路径从 <code>com.baomidou.mybatisplus.extension.service</code> 移到了 <code>com.baomidou.mybatisplus.spring.service</code>。本课代码示例已使用新路径。如果你用 Spring Boot 2.x（JDK 8），import 路径是旧的 <code>extension.service</code>。</p>
+</div>
+
 <h2>第三步：重构 UserController</h2>
 
 <p>现在把 Controller 里的查询逻辑全部搬空，改成调用 Service。先看<strong>重构前</strong>（你现在的代码）：</p>
@@ -217,7 +225,14 @@ public class UserController {
 
 <p><strong>重构后</strong> -- 每个方法只剩一行调用，干净清爽：</p>
 
-<pre><code>@RestController
+<pre><code>package com.yourname.demo.controller;
+
+import com.yourname.demo.entity.User;
+import com.yourname.demo.service.UserService;
+import org.springframework.web.bind.annotation.*;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+
+@RestController
 @RequestMapping("/users")
 public class UserController {
 
@@ -390,7 +405,7 @@ Content-Type: application/json
 
 <div class="callout callout-tip">
   <p class="callout-title">项目大了怎么组织包？</p>
-  <p>本课新文件直接放在 <code>com.yourname.demo</code> 下（和现有文件保持一致）。真实项目通常按层建子包：<code>controller/</code>、<code>service/</code>、<code>mapper/</code>、<code>entity/</code> -- 对应你前端的 <code>src/components/</code>、<code>src/stores/</code>、<code>src/api/</code>。项目小时平铺即可，类多了再分包不迟。</p>
+  <p>本课的 Service 文件放在 <code>com.yourname.demo</code> 下（和现有文件保持一致）。但类多了应该按层建子包：<code>controller/</code>、<code>service/</code>、<code>mapper/</code>、<code>entity/</code>、<code>config/</code> -- 对应你前端的 <code>src/components/</code>、<code>src/stores/</code>、<code>src/api/</code>。详见 <a href="0010-java-packages-and-structure.html">第 10 课：Java 包与项目结构</a>。</p>
 </div>
 
 <div class="quiz">
@@ -437,7 +452,7 @@ Content-Type: application/json
 
 <div class="lesson-nav">
   <a href="0008-frontend-backend-integration.html"><- 上一课：前后端联调</a>
-  <a href="0010-global-exception-handling.html">下一课：全局异常处理 -></a>
+  <a href="0010-java-packages-and-structure.html">下一课：Java 包与项目结构 -></a>
 </div>
 
 <div class="footer">

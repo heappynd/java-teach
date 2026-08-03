@@ -5,7 +5,7 @@
 ### Java 环境
 
 - [Eclipse Adoptium (Temurin JDK)](https://adoptium.net/)
-  OpenJDK 的主流发行版，免费开源。推荐下载 LTS 版本（JDK 17 或 JDK 21）。用于：JDK 安装。
+  OpenJDK 的主流发行版，免费开源。推荐下载 LTS 版本 JDK 17。用于：JDK 安装。
 - [BellSoft Liberica JDK](https://bell-sw.com/pages/downloads/)
   Spring 官方推荐的 JDK 发行版。用于：JDK 安装的备选方案。
 
@@ -33,6 +33,8 @@
 
 ### Java 语言基础
 
+- [Oracle Java Tutorials - Creating and Using Packages](https://docs.oracle.com/javase/tutorial/java/package/index.html)
+  Oracle 官方教程：Java 包的创建与使用。用于：理解 package 声明、import 机制、包与目录的对应关系。
 - [Oracle Java Tutorials](https://docs.oracle.com/javase/tutorial/)
   Oracle 官方 Java 教程。用于：Java 语法基础参考。
 - [Baeldung - Spring Boot Tutorials](https://www.baeldung.com/spring-boot)
