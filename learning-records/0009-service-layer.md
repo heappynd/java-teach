@@ -26,7 +26,8 @@
 - [x] 第 8 课：前后端联调 -- Mission 核心目标达成
 - [x] 第 9 课：Service 层与依赖注入 -- 工程化进阶启动
 - [x] 第 10 课：Java 包与项目结构 -- 补充分包教学
-- [ ] 第 11 课：全局异常处理（@RestControllerAdvice）
-- [ ] 第 12 课+：参数校验（Bean Validation）、统一响应格式
+- [x] 第 11 课：全局异常处理（@RestControllerAdvice）
+- [x] 第 12 课：参数校验（Bean Validation）
+- [x] 第 13 课：统一响应格式（Result<T>）
 
-下一课方向明确：第 9 课 createUser 抛出的 IllegalArgumentException 会让 Spring Boot 返回 500 HTML 错误页（Whitelabel Error Page），前端 axios 拿到 HTML 而非 JSON。第 11 课用 @RestControllerAdvice 全局异常处理，把所有异常统一转成规范的 JSON 错误响应。
+课程全部完成。Mission 核心目标已达成。

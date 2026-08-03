@@ -295,6 +295,46 @@
   </tr>
 </table>
 
+<h2>异常处理与校验</h2>
+
+<table>
+  <tr>
+    <th>术语</th>
+    <th>前端类比</th>
+    <th>说明</th>
+  </tr>
+  <tr>
+    <td><strong>@RestControllerAdvice</strong></td>
+    <td>Express 错误中间件</td>
+    <td>全局异常处理器，拦截所有 @RestController 抛出的异常，统一返回 JSON。</td>
+  </tr>
+  <tr>
+    <td><strong>@ExceptionHandler</strong></td>
+    <td>if (err instanceof TypeError)</td>
+    <td>指定要捕获的异常类型。可定义多个，按异常类型精确匹配。</td>
+  </tr>
+  <tr>
+    <td><strong>Bean Validation</strong><br>JSR 380</td>
+    <td>Element Plus form rules / VeeValidate</td>
+    <td>Java 标准参数校验框架。用注解声明规则（@NotBlank, @Email, @Min 等），框架自动校验。</td>
+  </tr>
+  <tr>
+    <td><strong>@Valid</strong></td>
+    <td>formRef.validate()</td>
+    <td>放在 Controller 方法参数前，触发 Bean Validation 自动校验。校验失败抛 MethodArgumentNotValidException。</td>
+  </tr>
+  <tr>
+    <td><strong>@NotBlank / @NotNull</strong></td>
+    <td>{ required: true }</td>
+    <td>@NotBlank 拒绝 null/空串/纯空格（最严格）；@NotNull 只拒绝 null。字符串用 @NotBlank，数字用 @NotNull。</td>
+  </tr>
+  <tr>
+    <td><strong>Result&lt;T&gt;</strong></td>
+    <td>Axios 响应拦截器的统一格式</td>
+    <td>统一响应包装类。所有接口返回 <code>{ code, message, data }</code> 结构。成功用 Result.success(data)，失败用 Result.error(code, msg)。</td>
+  </tr>
+</table>
+
 <h2>常用 Maven 命令</h2>
 
 <table>

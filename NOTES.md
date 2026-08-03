@@ -43,9 +43,11 @@
 工程化进阶阶段（第 9 课起，已按序推进）：
 10. Service 层与依赖注入（第 9 课，已完成）
 11. Java 包与项目结构（第 10 课，已完成 -- 补充分包教学）
-12. 全局异常处理（@RestControllerAdvice，解决 Service 抛异常返回 500 HTML 的问题）
-13. 参数校验（Bean Validation）
-14. 统一响应格式 / 接口文档（待定）
+12. 全局异常处理（第 11 课，已完成 -- @RestControllerAdvice）
+13. 参数校验（第 12 课，已完成 -- Bean Validation）
+14. 统一响应格式（第 13 课，已完成 -- Result<T>）
+
+课程全部完成！核心 Mission 目标已达成。
 
 ## JDK 8 兼容性标注
 
@@ -56,6 +58,9 @@
 - 第 7 课：LambdaQueryWrapper / Page / 方法引用均为 JDK 8 原生特性，无兼容性问题。分页插件依赖差异：JDK 17+ 用 `mybatis-plus-jsqlparser`，JDK 8 用 `mybatis-plus-jsqlparser-4.9`
 - 第 9 课：接口、继承、注解、构造器注入均为 Java/Spring 早期特性，IService / ServiceImpl 在 JDK 8（Spring Boot 2.x）同样可用，无兼容性问题
 - 第 10 课：Java 包机制是 JDK 1.0 特性，与 JDK 版本无关，完全兼容
+- 第 11 课：@RestControllerAdvice / @ExceptionHandler 是 Spring MVC 3.2+ 特性，JDK 8 完全兼容
+- 第 12 课：Bean Validation (JSR 380) 支持 JDK 8；Spring Boot 2.x 下 import 从 jakarta.validation 换成 javax.validation
+- 第 13 课：Result 泛型类 JDK 5+ 支持，Lombok @Data 兼容 JDK 8，Stream API 是 JDK 8 原生特性
 
 ## MyBatis Plus 版本差异备忘
 

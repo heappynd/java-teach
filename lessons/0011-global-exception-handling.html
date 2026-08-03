@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>第 11 课：全局异常处理 - Java 后端学习</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<h1>第 11 课：全局异常处理</h1>
+<p class="lesson-meta">预计用时：20 分钟 | 难度：中级 | 前置知识：<a href="0010-java-packages-and-structure.html">第 10 课 Java 包与项目结构</a></p>
+
+<h2>目标：让错误也返回 JSON</h2>
+
+<p>第 9 课的 <code>createUser</code> 里有一段邮箱查重逻辑：重复就抛 <code>IllegalArgumentException</code>。你测试时一定发现了 -- 抛异常后 Spring Boot 返回的是一整页 <strong>500 HTML 错误页</strong>（Whitelabel Error Page），你的 Vue3 前端 axios 拿到 HTML 而非 JSON，根本没法解析。</p>
+
+<p>这就像前端把原始 <code>Error</code> 对象直接 <code>alert()</code> 给用户看 -- 不专业，也没法用。这节课我们用 <strong>@RestControllerAdvice</strong> 统一拦截异常，返回规范的 JSON 错误响应。</p>
+
+<div class="compare-grid">
+  <div class="compare-card frontend">
+    <h4>前端（你已熟悉）</h4>
+    <pre><code>// Express 错误中间件
+app.use((err, req, res, next) => {
+  res.status(500).json({
+    code: 500,
+    message: err.message
+  })
+})</code></pre>
+    <p>兜底所有未捕获的错误，统一返回 JSON</p>
+  </div>
+  <div class="compare-card backend">
+    <h4>后端（今天学的）</h4>
+    <pre><code>// Spring Boot 全局异常处理
+@RestControllerAdvice
+public class GlobalExceptionHandler {
+
+  @ExceptionHandler(IllegalArgumentException.class)
+  public Map&lt;String, Object&gt; handle(
+      IllegalArgumentException e) {
+    return Map.of("code", 400,
+      "message", e.getMessage());
+  }
+}</code></pre>
+    <p>兜底所有 Controller 抛出的异常</p>
+  </div>
+</div>
+
+<h2>为什么需要全局异常处理？</h2>
+
+<p>没有全局处理时，Spring Boot 的默认行为是：</p>
+<ol>
+  <li>Service 抛出异常，Controller 没有 try-catch</li>
+  <li>异常一路冒泡到 Spring MVC</li>
+  <li>Spring MVC 没有找到处理器 -> 返回 <strong>500 状态码 + HTML 错误页</strong></li>
+</ol>
+
+<table>
+  <tr>
+    <th>问题</th>
+    <th>影响</th>
+  </tr>
+  <tr>
+    <td>返回 HTML 而非 JSON</td>
+    <td>前端 <code>res.data</code> 解析出乱码或空</td>
+  </tr>
+  <tr>
+    <td>暴露服务器内部信息</td>
+    <td>堆栈跟踪、类名、行号全给前端看了 -- 安全隐患</td>
+  </tr>
+  <tr>
+    <td>状态码全是 500</td>
+    <td>业务错误（邮箱重复）和系统错误（数据库挂了）无法区分</td>
+  </tr>
+</table>
+
+<h2>创建全局异常处理器</h2>
+
+<div class="steps-container">
+
+<div class="step">
+  <h3>新建 common 包和 GlobalExceptionHandler</h3>
+  <p>在 <code>common</code> 包下（<code>com.yourname.demo.common</code>）新建 <code>GlobalExceptionHandler.java</code>：</p>
+  <pre><code>package com.yourname.demo.common;
+
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+import java.util.Map;
+
+@RestControllerAdvice   // 全局异常处理，拦截所有 Controller 抛出的异常
+public class GlobalExceptionHandler {
+
+    // 拦截业务异常 -- 邮箱重复、参数非法等
+    @ExceptionHandler(IllegalArgumentException.class)
+    public Map&lt;String, Object&gt; handleIllegalArgument(IllegalArgumentException e) {
+        return Map.of("code", 400, "message", e.getMessage());
+    }
+}</code></pre>
+  <p>逐行解读：</p>
+  <table>
+    <tr>
+      <th>注解 / 代码</th>
+      <th>前端类比</th>
+      <th>含义</th>
+    </tr>
+    <tr>
+      <td><code>@RestControllerAdvice</code></td>
+      <td>Express <code>app.use((err, req, res, next))</code></td>
+      <td>全局异常处理器，拦截所有 <code>@RestController</code> 抛出的异常</td>
+    </tr>
+    <tr>
+      <td><code>@ExceptionHandler(IllegalArgumentException.class)</code></td>
+      <td><code>if (err instanceof TypeError)</code></td>
+      <td>指定要捕获的异常类型。只拦这种异常，其他的不拦</td>
+    </tr>
+    <tr>
+      <td><code>public Map&lt;String, Object&gt; handle(...)</code></td>
+      <td><code>res.json({ code, message })</code></td>
+      <td>返回值自动转 JSON。和 Controller 方法一样，Map 会被序列化</td>
+    </tr>
+  </table>
+  <div class="callout callout-jdk8">
+    <p class="callout-title">不支持</p>
+    <p><code>Map.of()</code> 是 JDK 9+。JDK 8 替代：</p>
+    <pre><code>Map&lt;String, Object&gt; error = new HashMap&lt;&gt;();
+error.put("code", 400);
+error.put("message", e.getMessage());
+return error;</code></pre>
+  </div>
+</div>
+
+<div class="step">
+  <h3>测试：邮箱查重现在返回 JSON</h3>
+  <p>重启应用。用已存在的邮箱 POST 创建用户：</p>
+  <pre><code>POST http://localhost:8080/api/users
+Content-Type: application/json
+
+{"name":"Dup","email":"vue@dev.com"}</code></pre>
+  <p><strong>之前</strong>（没有全局处理）：返回 500 + HTML 错误页</p>
+  <p><strong>现在</strong>：返回 JSON：</p>
+  <pre><code>{
+  "code": 400,
+  "message": "邮箱已被注册: vue@dev.com"
+}</code></pre>
+  <p>你的 Vue3 前端现在能正常解析错误了：<code>res.data.message</code> 就是错误提示。</p>
+</div>
+
+<div class="step">
+  <h3>加一个兜底处理器</h3>
+  <p>业务异常用 <code>IllegalArgumentException</code> 拦了，但如果数据库挂了、空指针了，还是会返回 HTML。加一个<strong>兜底异常处理器</strong>：</p>
+  <pre><code>// 拦截所有其他异常 -- 兜底
+@ExceptionHandler(Exception.class)
+public Map&lt;String, Object&gt; handleException(Exception e) {
+    return Map.of("code", 500, "message", "服务器内部错误");
+}</code></pre>
+  <div class="callout callout-warn">
+    <p class="callout-title">不要把堆栈信息返回给前端</p>
+    <p>兜底处理器返回固定消息 <code>"服务器内部错误"</code>，<strong>不返回 <code>e.getMessage()</code></strong>。因为未预期的异常可能包含敏感信息（SQL 语句、类名、路径等）。详细堆栈应该记到日志里，不是返回给前端。</p>
+    <p>前端类比：你也不会把 <code>err.stack</code> 直接返回给用户，而是返回"系统繁忙，请稍后重试"。</p>
+  </div>
+</div>
+
+</div>
+
+<h2>异常处理优先级</h2>
+
+<p>如果有多个 <code>@ExceptionHandler</code>，Spring 按<strong>异常类型的精确度</strong>匹配：</p>
+
+<table>
+  <tr>
+    <th>抛出的异常</th>
+    <th>匹配的处理器</th>
+    <th>返回</th>
+  </tr>
+  <tr>
+    <td><code>IllegalArgumentException</code></td>
+    <td><code>handleIllegalArgument</code>（精确匹配）</td>
+    <td><code>{"code":400,"message":"邮箱已被注册"}</code></td>
+  </tr>
+  <tr>
+    <td><code>NullPointerException</code></td>
+    <td><code>handleException</code>（兜底）</td>
+    <td><code>{"code":500,"message":"服务器内部错误"}</code></td>
+  </tr>
+  <tr>
+    <td><code>RuntimeException</code></td>
+    <td><code>handleException</code>（兜底）</td>
+    <td><code>{"code":500,"message":"服务器内部错误"}</code></td>
+  </tr>
+</table>
+
+<p>规则：越具体的异常类型优先匹配。<code>Exception</code> 是所有异常的父类，所以放在最后兜底。</p>
+
+<div class="callout callout-jdk8">
+  <p class="callout-title">完全兼容</p>
+  <p><code>@RestControllerAdvice</code> 和 <code>@ExceptionHandler</code> 都是 Spring MVC 3.2+ 的特性，JDK 8 / Spring Boot 2.x 完全支持。无兼容性问题。</p>
+</div>
+
+<div class="quiz">
+  <h3>小测验</h3>
+  <p class="quiz-question">@RestControllerAdvice 的作用是什么？</p>
+  <ul class="quiz-options">
+    <li class="quiz-option" onclick="checkAnswer(this, false)">标记类为 REST API 控制器</li>
+    <li class="quiz-option" onclick="checkAnswer(this, true)">全局捕获异常并返回 JSON</li>
+    <li class="quiz-option" onclick="checkAnswer(this, false)">配置 Spring Boot 自动装配</li>
+    <li class="quiz-option" onclick="checkAnswer(this, false)">管理数据库连接池配置</li>
+  </ul>
+  <div class="quiz-feedback" id="quiz-feedback"></div>
+</div>
+
+<div class="quiz">
+  <h3>小测验</h3>
+  <p class="quiz-question">Service 抛出异常，没有全局异常处理时会怎样？</p>
+  <ul class="quiz-options">
+    <li class="quiz-option" onclick="checkAnswer2(this, false)">返回 404 Not Found 页面</li>
+    <li class="quiz-option" onclick="checkAnswer2(this, false)">正常返回空 JSON 响应</li>
+    <li class="quiz-option" onclick="checkAnswer2(this, true)">返回 500 HTML 错误页面</li>
+    <li class="quiz-option" onclick="checkAnswer2(this, false)">自动重试该次请求操作</li>
+  </ul>
+  <div class="quiz-feedback" id="quiz-feedback-2"></div>
+</div>
+
+<div class="quiz">
+  <h3>小测验</h3>
+  <p class="quiz-question">@ExceptionHandler(IllegalArgumentException.class) 的参数指定了什么？</p>
+  <ul class="quiz-options">
+    <li class="quiz-option" onclick="checkAnswer3(this, false)">要返回的 HTTP 状态码</li>
+    <li class="quiz-option" onclick="checkAnswer3(this, true)">要捕获的异常类型</li>
+    <li class="quiz-option" onclick="checkAnswer3(this, false)">要调用的 Service 方法</li>
+    <li class="quiz-option" onclick="checkAnswer3(this, false)">要记录的日志级别</li>
+  </ul>
+  <div class="quiz-feedback" id="quiz-feedback-3"></div>
+</div>
+
+<div class="callout callout-tip">
+  <p class="callout-title">完成本课后</p>
+  <p>你的 API 错误响应从 HTML 变成了 JSON！前端 axios 终于能正常解析错误了。下一课我们用 Bean Validation 自动校验参数，不用再在 Service 里手写 if 判空。遇到任何问题随时问我！</p>
+</div>
+
+<h2>推荐阅读</h2>
+<p>主资源：<a href="https://docs.spring.io/spring-framework/reference/web/webmvc/mvc-ann-rest-exceptions.html" target="_blank">Spring 官方文档 - REST Exception Handling</a></p>
+<p>参考：<a href="../reference/glossary.html">术语表</a></p>
+
+<div class="lesson-nav">
+  <a href="0010-java-packages-and-structure.html"><- 上一课：Java 包与项目结构</a>
+  <a href="0012-bean-validation.html">下一课：参数校验 -></a>
+</div>
+
+<div class="footer">
+  <p>有任何不清楚的地方？直接问我！我是你的 Java 后端老师，随时帮你解决疑问。</p>
+</div>
+
+<script>
+function checkAnswer(el, isCorrect) {
+  var options = el.parentNode.querySelectorAll('.quiz-option');
+  var feedback = document.getElementById('quiz-feedback');
+  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
+  if (isCorrect) {
+    el.classList.add('correct');
+    feedback.className = 'quiz-feedback show correct';
+    feedback.textContent = '正确！@RestControllerAdvice 全局拦截所有 @RestController 抛出的异常，就像 Express 的错误中间件 app.use((err, req, res, next))，把异常转成 JSON 响应返回给前端。';
+  } else {
+    el.classList.add('incorrect');
+    feedback.className = 'quiz-feedback show incorrect';
+    feedback.textContent = '不对。@RestController 不需要这个注解，自动配置和连接池也无关。它的作用是全局异常处理，把 Controller 抛出的异常统一转成 JSON。';
+  }
+}
+
+function checkAnswer2(el, isCorrect) {
+  var options = el.parentNode.querySelectorAll('.quiz-option');
+  var feedback = document.getElementById('quiz-feedback-2');
+  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
+  if (isCorrect) {
+    el.classList.add('correct');
+    feedback.className = 'quiz-feedback show correct';
+    feedback.textContent = '正确！没有全局异常处理时，异常冒泡到 Spring MVC，默认返回 500 状态码和 Whitelabel Error Page（HTML）。前端 axios 拿到 HTML 而非 JSON，无法解析。';
+  } else {
+    el.classList.add('incorrect');
+    feedback.className = 'quiz-feedback show incorrect';
+    feedback.textContent = '不对。不是 404，也不是空 JSON，更不会自动重试。Spring Boot 默认返回 500 状态码和 HTML 格式的错误页面。';
+  }
+}
+
+function checkAnswer3(el, isCorrect) {
+  var options = el.parentNode.querySelectorAll('.quiz-option');
+  var feedback = document.getElementById('quiz-feedback-3');
+  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
+  if (isCorrect) {
+    el.classList.add('correct');
+    feedback.className = 'quiz-feedback show correct';
+    feedback.textContent = '正确！@ExceptionHandler 的参数指定要捕获的异常类型。写 IllegalArgumentException.class 就只拦这种异常，写 Exception.class 就兜底所有异常。越具体的类型优先匹配。';
+  } else {
+    el.classList.add('incorrect');
+    feedback.className = 'quiz-feedback show incorrect';
+    feedback.textContent = '不对。参数不是状态码、方法名或日志级别，它指定的是要捕获的异常类型（如 IllegalArgumentException.class）。';
+  }
+}
+</script>
+
+</body>
+</html>

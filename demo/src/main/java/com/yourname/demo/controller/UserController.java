@@ -1,8 +1,10 @@
 package com.yourname.demo.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.yourname.demo.common.Result;
 import com.yourname.demo.entity.User;
 import com.yourname.demo.service.UserService;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -16,34 +18,34 @@ public class UserController {
     }
 
     @GetMapping
-    public Page<User> getList(
+    public Result<Page<User>> getList(
             @RequestParam(defaultValue = "1") long page,
             @RequestParam(defaultValue = "10") long size,
             @RequestParam(required = false) String name,
             @RequestParam(required = false) String email) {
-        return userService.pageList(page, size, name, email);
+        return Result.success(userService.pageList(page, size, name, email));
     }
 
     @GetMapping("/{id}")
-    public User getById(@PathVariable Long id) {
-        return userService.getById(id);
+    public Result<User> getById(@PathVariable Long id) {
+        return Result.success(userService.getById(id));
     }
 
     @PostMapping
-    public User create(@RequestBody User user) {
-        return userService.createUser(user);
+    public Result<User> create(@Valid @RequestBody User user) {
+        return Result.success(userService.createUser(user));
     }
 
     @PutMapping("/{id}")
-    public User update(@PathVariable Long id, @RequestBody User user) {
+    public Result<User> update(@PathVariable Long id, @Valid @RequestBody User user) {
         user.setId(id);
         userService.updateById(user);
-        return userService.getById(id);
+        return Result.success(userService.getById(id));
     }
 
     @DeleteMapping("/{id}")
-    public String delete(@PathVariable Long id) {
+    public Result<?> delete(@PathVariable Long id) {
         userService.removeById(id);
-        return "Deleted user " + id;
+        return Result.success();
     }
 }

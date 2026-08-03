@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>第 12 课：参数校验 - Java 后端学习</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<h1>第 12 课：参数校验（Bean Validation）</h1>
+<p class="lesson-meta">预计用时：25 分钟 | 难度：中级 | 前置知识：<a href="0011-global-exception-handling.html">第 11 课 全局异常处理</a></p>
+
+<h2>目标：用注解代替手写校验</h2>
+
+<p>第 9 课在 Service 里手写了邮箱查重逻辑。但如果用户提交的 <code>name</code> 是空字符串？<code>email</code> 格式不对？<code>age</code> 传了 -1？这些校验如果都手写，Service 会变成一堆 if：</p>
+
+<pre><code>// 手写校验 -- 又臭又长
+if (user.getName() == null || user.getName().isEmpty()) {
+    throw new IllegalArgumentException("姓名不能为空");
+}
+if (user.getEmail() == null || !user.getEmail().contains("@")) {
+    throw new IllegalArgumentException("邮箱格式不正确");
+}
+if (user.getAge() != null && user.getAge() < 0) {
+    throw new IllegalArgumentException("年龄不能为负数");
+}
+// ... 还有多少字段要校验？</code></pre>
+
+<p>你在前端一定用过 <strong>Element Plus</strong> 的 <code>rules</code> 或 <strong>VeeValidate</strong> -- 在表单上声明校验规则，框架自动执行。Java 也有类似的东西：<strong>Bean Validation</strong>（JSR 380），用注解声明规则，框架自动校验。</p>
+
+<div class="compare-grid">
+  <div class="compare-card frontend">
+    <h4>前端（你已熟悉）</h4>
+    <pre><code>// Element Plus 表单校验规则
+rules: {
+  name: [
+    { required: true,
+      message: '姓名不能为空' }
+  ],
+  email: [
+    { required: true, message: '邮箱不能为空' },
+    { type: 'email', message: '邮箱格式不正确' }
+  ]
+}</code></pre>
+  </div>
+  <div class="compare-card backend">
+    <h4>后端（今天学的）</h4>
+    <pre><code>// Bean Validation 注解
+public class User {
+    @NotBlank(message = "姓名不能为空")
+    private String name;
+
+    @NotBlank(message = "邮箱不能为空")
+    @Email(message = "邮箱格式不正确")
+    private String email;
+
+    @Min(value = 0, message = "年龄不能为负数")
+    private Integer age;
+}</code></pre>
+  </div>
+</div>
+
+<h2>第一步：添加依赖</h2>
+
+<p>在 <code>pom.xml</code> 的 <code>&lt;dependencies&gt;</code> 中添加：</p>
+
+<pre><code>&lt;!-- Bean Validation --&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-boot-starter-validation&lt;/artifactId&gt;
+&lt;/dependency&gt;</code></pre>
+
+<div class="callout callout-info">
+  <p class="callout-title">为什么需要单独引入？</p>
+  <p>Spring Boot 2.3 起把 validation 从 web starter 中移除了，需要手动添加。底层实现是 <strong>Hibernate Validator</strong>（和数据库的 Hibernate 没关系，只是同一个团队出品）。</p>
+</div>
+
+<h2>第二步：给 Entity 加校验注解</h2>
+
+<p>在 <code>User.java</code> 的字段上加注解：</p>
+
+<pre><code>package com.yourname.demo.entity;
+
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+import jakarta.validation.constraints.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@TableName("user")
+@NoArgsConstructor
+@AllArgsConstructor
+public class User {
+
+    @TableId(type = IdType.AUTO)
+    private Long id;
+
+    @NotBlank(message = "姓名不能为空")
+    private String name;
+
+    @Min(value = 0, message = "年龄不能为负数")
+    private Integer age;
+
+    @NotBlank(message = "邮箱不能为空")
+    @Email(message = "邮箱格式不正确")
+    private String email;
+}</code></pre>
+
+<h3>常用校验注解速查</h3>
+
+<table>
+  <tr>
+    <th>注解</th>
+    <th>作用</th>
+    <th>前端类比</th>
+  </tr>
+  <tr>
+    <td><code>@NotBlank</code></td>
+    <td>不能为 null、空字符串、纯空格</td>
+    <td><code>{ required: true }</code></td>
+  </tr>
+  <tr>
+    <td><code>@NotEmpty</code></td>
+    <td>不能为 null、空字符串（允许纯空格）</td>
+    <td><code>{ required: true }</code></td>
+  </tr>
+  <tr>
+    <td><code>@NotNull</code></td>
+    <td>不能为 null（允许空字符串）</td>
+    <td>-</td>
+  </tr>
+  <tr>
+    <td><code>@Email</code></td>
+    <td>必须是合法邮箱格式</td>
+    <td><code>{ type: 'email' }</code></td>
+  </tr>
+  <tr>
+    <td><code>@Min(0)</code></td>
+    <td>数字最小值 0</td>
+    <td><code>{ min: 0 }</code></td>
+  </tr>
+  <tr>
+    <td><code>@Max(150)</code></td>
+    <td>数字最大值 150</td>
+    <td><code>{ max: 150 }</code></td>
+  </tr>
+  <tr>
+    <td><code>@Size(min=2, max=20)</code></td>
+    <td>字符串长度 2-20</td>
+    <td><code>{ min: 2, max: 20 }</code></td>
+  </tr>
+  <tr>
+    <td><code>@Pattern(regexp = "^1[3-9]\\d{9}$")</code></td>
+    <td>正则匹配（如手机号）</td>
+    <td><code>{ pattern: /^1[3-9]\d{9}$/ }</code></td>
+  </tr>
+</table>
+
+<div class="callout callout-warn">
+  <p class="callout-title">@NotBlank vs @NotNull 的区别</p>
+  <p>这是最常见的坑：</p>
+  <ul>
+    <li><code>@NotNull</code> -- <code>null</code> 不行，<code>""</code> 行</li>
+    <li><code>@NotEmpty</code> -- <code>null</code> 不行，<code>""</code> 不行，<code>" "</code> 行</li>
+    <li><code>@NotBlank</code> -- <code>null</code> 不行，<code>""</code> 不行，<code>" "</code> 不行（最严格）</li>
+  </ul>
+  <p>字符串字段用 <code>@NotBlank</code>，数字字段用 <code>@NotNull</code> + <code>@Min</code>/<code>@Max</code>。</p>
+</div>
+
+<h2>第三步：Controller 加 @Valid</h2>
+
+<p>光在 Entity 上加注解不够 -- 还得告诉 Spring "请校验这个参数"。在 Controller 的 <code>@RequestBody</code> 前加 <code>@Valid</code>：</p>
+
+<pre><code>@PostMapping
+public User create(<strong>@Valid</strong> @RequestBody User user) {
+    return userService.createUser(user);
+}
+
+@PutMapping("/{id}")
+public User update(@PathVariable Long id, <strong>@Valid</strong> @RequestBody User user) {
+    user.setId(id);
+    userService.updateById(user);
+    return userService.getById(id);
+}</code></pre>
+
+<p>就这么一个注解，Spring 在进入方法体之前就会自动校验 <code>user</code> 的每个字段。校验不通过时，直接抛出 <code>MethodArgumentNotValidException</code>，<strong>根本不会执行方法体内的代码</strong>。</p>
+
+<div class="callout callout-info">
+  <p class="callout-title">@Valid 是什么？</p>
+  <p><code>@Valid</code> 是 JSR 380 标准注解，告诉 Spring："请对这个参数执行 Bean Validation"。就像前端表单提交前调用 <code>formRef.validate()</code> 一样 -- 不过这里是自动的，不需要手动调。</p>
+</div>
+
+<h2>第四步：处理校验异常</h2>
+
+<p>校验失败时 Spring 抛出 <code>MethodArgumentNotValidException</code>。如果不处理，又会返回 HTML 错误页。在 <a href="0011-global-exception-handling.html">第 11 课</a>的 <code>GlobalExceptionHandler</code> 中添加：</p>
+
+<pre><code>// 添加到 GlobalExceptionHandler.java
+@ExceptionHandler(MethodArgumentNotValidException.class)
+public Map&lt;String, Object&gt; handleValidation(MethodArgumentNotValidException e) {
+    // 收集所有字段的校验错误
+    String message = e.getBindingResult().getFieldErrors().stream()
+            .map(err -> err.getField() + ": " + err.getDefaultMessage())
+            .collect(Collectors.joining("; "));
+    return Map.of("code", 400, "message", message);
+}</code></pre>
+
+<p>需要补充 import：</p>
+<pre><code>import org.springframework.web.bind.MethodArgumentNotValidException;
+import java.util.stream.Collectors;</code></pre>
+
+<p>这段代码做了什么：</p>
+<ol>
+  <li><code>e.getBindingResult().getFieldErrors()</code> -- 获取所有校验失败的字段</li>
+  <li><code>.map(err -> err.getField() + ": " + err.getDefaultMessage())</code> -- 拼成 <code>"email: 邮箱格式不正确"</code></li>
+  <li><code>.collect(Collectors.joining("; "))</code> -- 多个错误用分号拼接</li>
+</ol>
+
+<div class="callout callout-jdk8">
+  <p class="callout-title">完全兼容</p>
+  <p>Bean Validation（JSR 380）和 Hibernate Validator 支持 JDK 8。Spring Boot 2.x 下只需把 import 从 <code>jakarta.validation</code> 换成 <code>javax.validation</code>。Stream API 是 JDK 8 原生特性。</p>
+</div>
+
+<h2>测试</h2>
+
+<div class="steps-container">
+
+<div class="step">
+  <h3>测试空姓名</h3>
+  <pre><code>POST http://localhost:8080/api/users
+Content-Type: application/json
+
+{"email":"test@dev.com"}</code></pre>
+  <p>响应：</p>
+  <pre><code>{
+  "code": 400,
+  "message": "name: 姓名不能为空"
+}</code></pre>
+</div>
+
+<div class="step">
+  <h3>测试非法邮箱</h3>
+  <pre><code>POST http://localhost:8080/api/users
+Content-Type: application/json
+
+{"name":"Test","email":"not-an-email"}</code></pre>
+  <p>响应：</p>
+  <pre><code>{
+  "code": 400,
+  "message": "email: 邮箱格式不正确"
+}</code></pre>
+</div>
+
+<div class="step">
+  <h3>测试多字段同时出错</h3>
+  <pre><code>POST http://localhost:8080/api/users
+Content-Type: application/json
+
+{"age":-5,"email":"bad"}</code></pre>
+  <p>响应（所有错误一次性返回）：</p>
+  <pre><code>{
+  "code": 400,
+  "message": "name: 姓名不能为空; age: 年龄不能为负数; email: 邮箱格式不正确"
+}</code></pre>
+  <p>前端可以按 <code>;</code> 分割，逐条展示给用户 -- 和 Element Plus 表单校验一次性标红所有字段是一样的体验。</p>
+</div>
+
+</div>
+
+<div class="quiz">
+  <h3>小测验</h3>
+  <p class="quiz-question">@Valid 注解应该放在哪里？</p>
+  <ul class="quiz-options">
+    <li class="quiz-option" onclick="checkAnswer(this, false)">放在 Service 实现类上面</li>
+    <li class="quiz-option" onclick="checkAnswer(this, true)">放在 Controller 方法参数前</li>
+    <li class="quiz-option" onclick="checkAnswer(this, false)">放在 Entity 类的注解里</li>
+    <li class="quiz-option" onclick="checkAnswer(this, false)">放在 pom.xml 的依赖中</li>
+  </ul>
+  <div class="quiz-feedback" id="quiz-feedback"></div>
+</div>
+
+<div class="quiz">
+  <h3>小测验</h3>
+  <p class="quiz-question">@NotBlank 和 @NotNull 的核心区别是什么？</p>
+  <ul class="quiz-options">
+    <li class="quiz-option" onclick="checkAnswer2(this, false)">两者功能完全相同无区别</li>
+    <li class="quiz-option" onclick="checkAnswer2(this, true)">NotBlank 还拒绝空白字符串</li>
+    <li class="quiz-option" onclick="checkAnswer2(this, false)">NotNull 还校验数字范围</li>
+    <li class="quiz-option" onclick="checkAnswer2(this, false)">NotBlank 只能用于数字类型</li>
+  </ul>
+  <div class="quiz-feedback" id="quiz-feedback-2"></div>
+</div>
+
+<div class="quiz">
+  <h3>小测验</h3>
+  <p class="quiz-question">Bean Validation 校验失败时抛出什么异常？</p>
+  <ul class="quiz-options">
+    <li class="quiz-option" onclick="checkAnswer3(this, false)">NullPointerException 异常</li>
+    <li class="quiz-option" onclick="checkAnswer3(this, false)">IllegalArgumentException 异常</li>
+    <li class="quiz-option" onclick="checkAnswer3(this, true)">MethodArgumentNotValidException</li>
+    <li class="quiz-option" onclick="checkAnswer3(this, false)">ConstraintViolationException</li>
+  </ul>
+  <div class="quiz-feedback" id="quiz-feedback-3"></div>
+</div>
+
+<div class="callout callout-tip">
+  <p class="callout-title">完成本课后</p>
+  <p>参数校验全自动了！加注解、加 <code>@Valid</code>，完事。Service 里再也不用写一堆 if 判空了。下一课也是最后一课 -- 统一响应格式，让你的 API 返回结构统一、专业规范。遇到任何问题随时问我！</p>
+</div>
+
+<h2>推荐阅读</h2>
+<p>主资源：<a href="https://docs.spring.io/spring-framework/reference/core/validation/beanvalidation.html" target="_blank">Spring 官方文档 - Bean Validation</a></p>
+<p>参考：<a href="https://beanvalidation.org/" target="_blank">Jakarta Bean Validation 官网（JSR 380 标准）</a></p>
+<p>参考：<a href="../reference/glossary.html">术语表</a></p>
+
+<div class="lesson-nav">
+  <a href="0011-global-exception-handling.html"><- 上一课：全局异常处理</a>
+  <a href="0013-unified-response-format.html">下一课：统一响应格式 -></a>
+</div>
+
+<div class="footer">
+  <p>有任何不清楚的地方？直接问我！我是你的 Java 后端老师，随时帮你解决疑问。</p>
+</div>
+
+<script>
+function checkAnswer(el, isCorrect) {
+  var options = el.parentNode.querySelectorAll('.quiz-option');
+  var feedback = document.getElementById('quiz-feedback');
+  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
+  if (isCorrect) {
+    el.classList.add('correct');
+    feedback.className = 'quiz-feedback show correct';
+    feedback.textContent = '正确！@Valid 放在 Controller 方法的 @RequestBody 参数前，告诉 Spring 在进入方法体之前自动校验这个对象。就像前端表单提交前调用 formRef.validate()。';
+  } else {
+    el.classList.add('incorrect');
+    feedback.className = 'quiz-feedback show incorrect';
+    feedback.textContent = '不对。注解加在 Entity 字段上（如 @NotBlank），但触发校验的 @Valid 必须放在 Controller 方法参数前。Service 和 pom.xml 都不是它的位置。';
+  }
+}
+
+function checkAnswer2(el, isCorrect) {
+  var options = el.parentNode.querySelectorAll('.quiz-option');
+  var feedback = document.getElementById('quiz-feedback-2');
+  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
+  if (isCorrect) {
+    el.classList.add('correct');
+    feedback.className = 'quiz-feedback show correct';
+    feedback.textContent = '正确！@NotBlank 最严格：null、空字符串 ""、纯空格 " " 都不通过。@NotNull 只拒绝 null，空字符串 "" 能过。字符串字段用 @NotBlank，数字字段用 @NotNull。';
+  } else {
+    el.classList.add('incorrect');
+    feedback.className = 'quiz-feedback show incorrect';
+    feedback.textContent = '不对。两者功能不同：@NotNull 只拒绝 null，@NotBlank 还拒绝空字符串和纯空格。这是最常见的坑。';
+  }
+}
+
+function checkAnswer3(el, isCorrect) {
+  var options = el.parentNode.querySelectorAll('.quiz-option');
+  var feedback = document.getElementById('quiz-feedback-3');
+  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
+  if (isCorrect) {
+    el.classList.add('correct');
+    feedback.className = 'quiz-feedback show correct';
+    feedback.textContent = '正确！@Valid 校验失败时 Spring 抛出 MethodArgumentNotValidException。在 GlobalExceptionHandler 中用 @ExceptionHandler 捕获它，把校验错误提取成 JSON 返回给前端。';
+  } else {
+    el.classList.add('incorrect');
+    feedback.className = 'quiz-feedback show incorrect';
+    feedback.textContent = '不对。NullPointerException 和 IllegalArgumentException 是业务代码抛的。ConstraintViolationException 是在 Service 层校验时抛的。Controller 层 @Valid 校验失败抛的是 MethodArgumentNotValidException。';
+  }
+}
+</script>
+
+</body>
+</html>

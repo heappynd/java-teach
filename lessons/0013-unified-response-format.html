@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>第 13 课：统一响应格式 - Java 后端学习</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<h1>第 13 课：统一响应格式</h1>
+<p class="lesson-meta">预计用时：25 分钟 | 难度：中级 | 前置知识：<a href="0012-bean-validation.html">第 12 课 参数校验</a></p>
+
+<h2>目标：所有 API 返回统一结构</h2>
+
+<p>到目前为止，你的 API 返回格式五花八门：</p>
+
+<table>
+  <tr>
+    <th>接口</th>
+    <th>当前返回</th>
+    <th>问题</th>
+  </tr>
+  <tr>
+    <td><code>GET /users</code></td>
+    <td><code>{"records":[...],"total":16,...}</code></td>
+    <td>直接返回 Page 对象，前端要猜结构</td>
+  </tr>
+  <tr>
+    <td><code>GET /users/1</code></td>
+    <td><code>{"id":1,"name":"Vue",...}</code></td>
+    <td>直接返回 User 对象</td>
+  </tr>
+  <tr>
+    <td><code>DELETE /users/1</code></td>
+    <td><code>"Deleted user 1"</code></td>
+    <td>返回纯字符串，和其他接口格式完全不同</td>
+  </tr>
+  <tr>
+    <td>出错时</td>
+    <td><code>{"code":400,"message":"邮箱已被注册"}</code></td>
+    <td>错误有格式，成功却没有</td>
+  </tr>
+</table>
+
+<p>前端每次都要判断"这个接口返回的是什么结构"，很烦。统一成一个格式：</p>
+
+<pre><code>// 成功
+{ "code": 200, "message": "success", "data": { ... } }
+
+// 失败
+{ "code": 400, "message": "邮箱已被注册", "data": null }</code></pre>
+
+<div class="compare-grid">
+  <div class="compare-card frontend">
+    <h4>前端（你已熟悉）</h4>
+    <p>Axios 响应拦截器：</p>
+    <pre><code>axios.interceptors.response.use(
+  res => {
+    if (res.data.code === 200) {
+      return res.data.data  // 直接取 data
+    }
+    ElMessage.error(res.data.message)
+    return Promise.reject()
+  }
+)</code></pre>
+    <p>前端只需写一次拦截器，所有接口统一处理</p>
+  </div>
+  <div class="compare-card backend">
+    <h4>后端（今天学的）</h4>
+    <p>Result 包装类：</p>
+    <pre><code>@GetMapping("/{id}")
+public Result&lt;User&gt; getById(
+    @PathVariable Long id) {
+  return Result.success(
+    userService.getById(id));
+}</code></pre>
+    <p>所有接口返回 Result，格式统一</p>
+  </div>
+</div>
+
+<h2>第一步：创建 Result 包装类</h2>
+
+<p>在 <code>common</code> 包下新建 <code>Result.java</code>：</p>
+
+<pre><code>package com.yourname.demo.common;
+
+import lombok.Data;
+
+@Data
+public class Result&lt;T&gt; {
+    private int code;
+    private String message;
+    private T data;
+
+    // 成功 -- 带数据
+    public static &lt;T&gt; Result&lt;T&gt; success(T data) {
+        Result&lt;T&gt; r = new Result&lt;&gt;();
+        r.setCode(200);
+        r.setMessage("success");
+        r.setData(data);
+        return r;
+    }
+
+    // 成功 -- 不带数据（用于 DELETE 等无返回值操作）
+    public static &lt;T&gt; Result&lt;T&gt; success() {
+        return success(null);
+    }
+
+    // 失败
+    public static &lt;T&gt; Result&lt;T&gt; error(int code, String message) {
+        Result&lt;T&gt; r = new Result&lt;&gt;();
+        r.setCode(code);
+        r.setMessage(message);
+        r.setData(null);
+        return r;
+    }
+}</code></pre>
+
+<p>逐行解读：</p>
+<table>
+  <tr>
+    <th>部分</th>
+    <th>说明</th>
+    <th>前端类比</th>
+  </tr>
+  <tr>
+    <td><code>Result&lt;T&gt;</code></td>
+    <td>泛型类。T 是 data 的类型 -- <code>Result&lt;User&gt;</code> 的 data 就是 User</td>
+    <td>TypeScript 的 <code>interface Result&lt;T&gt;</code></td>
+  </tr>
+  <tr>
+    <td><code>static &lt;T&gt; Result&lt;T&gt; success(T data)</code></td>
+    <td>静态工厂方法。调用 <code>Result.success(user)</code> 就能创建成功响应</td>
+    <td>类似 <code>Object.create()</code> 工厂模式</td>
+  </tr>
+  <tr>
+    <td><code>@Data</code></td>
+    <td>Lombok 自动生成 getter/setter，Jackson 才能序列化成 JSON</td>
+    <td>-</td>
+  </tr>
+</table>
+
+<div class="callout callout-tip">
+  <p class="callout-title">为什么用静态工厂方法？</p>
+  <p>如果用 <code>new Result&lt;&gt;()</code> 再逐个 setter，每个接口要写三行。用 <code>Result.success(user)</code> 一行搞定。这和你前端封装 <code>createResponse(data)</code> 是同一个思路。</p>
+</div>
+
+<h2>第二步：Controller 返回 Result</h2>
+
+<p>把 <code>UserController</code> 所有方法的返回类型包上 <code>Result</code>：</p>
+
+<pre><code>package com.yourname.demo.controller;
+
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.yourname.demo.common.Result;
+import com.yourname.demo.entity.User;
+import com.yourname.demo.service.UserService;
+import jakarta.validation.Valid;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/users")
+public class UserController {
+
+    private final UserService userService;
+
+    public UserController(UserService userService) {
+        this.userService = userService;
+    }
+
+    @GetMapping
+    public Result&lt;Page&lt;User&gt;&gt; getList(
+            @RequestParam(defaultValue = "1") long page,
+            @RequestParam(defaultValue = "10") long size,
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String email) {
+        return Result.success(userService.pageList(page, size, name, email));
+    }
+
+    @GetMapping("/{id}")
+    public Result&lt;User&gt; getById(@PathVariable Long id) {
+        return Result.success(userService.getById(id));
+    }
+
+    @PostMapping
+    public Result&lt;User&gt; create(@Valid @RequestBody User user) {
+        return Result.success(userService.createUser(user));
+    }
+
+    @PutMapping("/{id}")
+    public Result&lt;User&gt; update(@PathVariable Long id, @Valid @RequestBody User user) {
+        user.setId(id);
+        userService.updateById(user);
+        return Result.success(userService.getById(id));
+    }
+
+    @DeleteMapping("/{id}")
+    public Result&lt;?&gt; delete(@PathVariable Long id) {
+        userService.removeById(id);
+        return Result.success();
+    }
+}</code></pre>
+
+<p>每个方法只有两处变化：</p>
+<ul>
+  <li>返回类型从 <code>User</code> 变成 <code>Result&lt;User&gt;</code>（包一层）</li>
+  <li>返回值从 <code>userService.getById(id)</code> 变成 <code>Result.success(userService.getById(id))</code>（套一层）</li>
+</ul>
+
+<div class="callout callout-warn">
+  <p class="callout-title">delete 方法为什么用 Result&lt;?&gt;？</p>
+  <p><code>Result.success()</code> 不带数据时返回 <code>Result&lt;Object&gt;</code>（data 为 null）。用 <code>Result&lt;?&gt;</code> 通配符更准确 -- "返回某种 Result，但不关心 data 的类型"。</p>
+</div>
+
+<h2>第三步：异常处理也用 Result</h2>
+
+<p>把 <a href="0011-global-exception-handling.html">第 11 课</a>和<a href="0012-bean-validation.html">第 12 课</a>的 <code>GlobalExceptionHandler</code> 也改成返回 <code>Result</code>，保持格式统一：</p>
+
+<pre><code>package com.yourname.demo.common;
+
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+import java.util.stream.Collectors;
+
+@RestControllerAdvice
+public class GlobalExceptionHandler {
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public Result&lt;?&gt; handleIllegalArgument(IllegalArgumentException e) {
+        return Result.error(400, e.getMessage());
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public Result&lt;?&gt; handleValidation(MethodArgumentNotValidException e) {
+        String message = e.getBindingResult().getFieldErrors().stream()
+                .map(err -> err.getField() + ": " + err.getDefaultMessage())
+                .collect(Collectors.joining("; "));
+        return Result.error(400, message);
+    }
+
+    @ExceptionHandler(Exception.class)
+    public Result&lt;?&gt; handleException(Exception e) {
+        return Result.error(500, "服务器内部错误");
+    }
+}</code></pre>
+
+<p>从 <code>Map.of(...)</code> 改成了 <code>Result.error(...)</code>，逻辑完全一样，只是返回格式更统一了。</p>
+
+<h2>测试：所有接口统一格式</h2>
+
+<div class="steps-container">
+
+<div class="step">
+  <h3>成功 -- 获取用户</h3>
+  <pre><code>GET http://localhost:8080/api/users/1</code></pre>
+  <pre><code>{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": 1,
+    "name": "Vue",
+    "age": null,
+    "email": "vue@dev.com"
+  }
+}</code></pre>
+</div>
+
+<div class="step">
+  <h3>成功 -- 删除用户</h3>
+  <pre><code>DELETE http://localhost:8080/api/users/1</code></pre>
+  <pre><code>{
+  "code": 200,
+  "message": "success",
+  "data": null
+}</code></pre>
+</div>
+
+<div class="step">
+  <h3>失败 -- 参数校验</h3>
+  <pre><code>POST http://localhost:8080/api/users
+Content-Type: application/json
+
+{"email":"bad"}</code></pre>
+  <pre><code>{
+  "code": 400,
+  "message": "name: 姓名不能为空; email: 邮箱格式不正确",
+  "data": null
+}</code></pre>
+</div>
+
+<div class="step">
+  <h3>失败 -- 业务异常</h3>
+  <pre><code>POST http://localhost:8080/api/users
+Content-Type: application/json
+
+{"name":"Dup","email":"vue@dev.com"}</code></pre>
+  <pre><code>{
+  "code": 400,
+  "message": "邮箱已被注册: vue@dev.com",
+  "data": null
+}</code></pre>
+</div>
+
+</div>
+
+<h2>前端对接：Axios 拦截器</h2>
+
+<p>后端统一格式后，前端只需要写一次拦截器，所有接口的处理逻辑就统一了：</p>
+
+<pre><code>// axios 响应拦截器 -- 写一次，全局生效
+axios.interceptors.response.use(
+  res => {
+    const result = res.data  // { code, message, data }
+    if (result.code === 200) {
+      return result.data      // 成功：直接取 data
+    }
+    // 失败：弹出错误提示
+    ElMessage.error(result.message)
+    return Promise.reject(result)
+  },
+  err => {
+    ElMessage.error('网络错误')
+    return Promise.reject(err)
+  }
+)
+
+// 业务代码变得极简 -- 不用判断 code，直接用 data
+const users = await axios.get('/api/users')  // 直接拿到 Page&lt;User&gt;
+const user = await axios.get('/api/users/1')  // 直接拿到 User</code></pre>
+
+<div class="callout callout-info">
+  <p class="callout-title">关于 Swagger / OpenAPI</p>
+  <p>统一响应格式后，可以考虑集成 <strong>SpringDoc OpenAPI</strong>（Swagger 3）自动生成 API 文档。在 pom.xml 加 <code>springdoc-openapi-starter-webmvc-ui</code> 依赖后，访问 <code>http://localhost:8080/api/swagger-ui.html</code> 就能看到所有接口的在线文档和调试页面。这不在本课范围内，但强烈推荐了解。</p>
+</div>
+
+<div class="callout callout-jdk8">
+  <p class="callout-title">完全兼容</p>
+  <p>Result 是普通 Java 泛型类，JDK 5+ 就支持。Lombok 的 <code>@Data</code> 兼容 JDK 8。Stream API 是 JDK 8 原生特性。无兼容性问题。</p>
+</div>
+
+<div class="quiz">
+  <h3>小测验</h3>
+  <p class="quiz-question">统一响应格式 Result&lt;T&gt; 中泛型 T 代表什么？</p>
+  <ul class="quiz-options">
+    <li class="quiz-option" onclick="checkAnswer(this, false)">代表 HTTP 状态码类型</li>
+    <li class="quiz-option" onclick="checkAnswer(this, true)">代表 data 字段的数据类型</li>
+    <li class="quiz-option" onclick="checkAnswer(this, false)">代表错误消息的字符串类型</li>
+    <li class="quiz-option" onclick="checkAnswer(this, false)">代表请求参数的映射类型</li>
+  </ul>
+  <div class="quiz-feedback" id="quiz-feedback"></div>
+</div>
+
+<div class="quiz">
+  <h3>小测验</h3>
+  <p class="quiz-question">为什么错误响应也用 Result 格式包装？</p>
+  <ul class="quiz-options">
+    <li class="quiz-option" onclick="checkAnswer2(this, false)">为了增加响应的数据量大小</li>
+    <li class="quiz-option" onclick="checkAnswer2(this, true)">为了让前端统一一套逻辑处理</li>
+    <li class="quiz-option" onclick="checkAnswer2(this, false)">为了提高服务器的响应速度</li>
+    <li class="quiz-option" onclick="checkAnswer2(this, false)">为了兼容旧版本的浏览器</li>
+  </ul>
+  <div class="quiz-feedback" id="quiz-feedback-2"></div>
+</div>
+
+<div class="quiz">
+  <h3>小测验</h3>
+  <p class="quiz-question">前端如何从 Result 格式中取出实际数据？</p>
+  <ul class="quiz-options">
+    <li class="quiz-option" onclick="checkAnswer3(this, false)">从 response.code 字段中取</li>
+    <li class="quiz-option" onclick="checkAnswer3(this, true)">从 response.data 字段中取</li>
+    <li class="quiz-option" onclick="checkAnswer3(this, false)">从 response.message 字段中取</li>
+    <li class="quiz-option" onclick="checkAnswer3(this, false)">从 response.headers 中取</li>
+  </ul>
+  <div class="quiz-feedback" id="quiz-feedback-3"></div>
+</div>
+
+<div class="callout callout-tip">
+  <p class="callout-title">课程完成！</p>
+  <p>恭喜！你已经从零开始掌握了 Java 后端开发的核心技能链：</p>
+  <ol>
+    <li>环境搭建（JDK + Maven）</li>
+    <li>创建 Spring Boot 项目</li>
+    <li>编写 RESTful API</li>
+    <li>连接 PostgreSQL + MyBatis Plus</li>
+    <li>条件查询 + 分页</li>
+    <li>前后端联调</li>
+    <li>Service 层 + 依赖注入</li>
+    <li>项目分包</li>
+    <li>全局异常处理</li>
+    <li>参数校验</li>
+    <li>统一响应格式</li>
+  </ol>
+  <p>你现在能独立构建一个规范的后端 API 服务，与 Vue3 前端对接，完成全栈开发。接下来在实践中成长 -- 做一个真实项目，遇到问题随时回来问我！</p>
+</div>
+
+<h2>推荐阅读</h2>
+<p>主资源：<a href="https://docs.spring.io/spring-framework/reference/web/webmvc/mvc-ann-rest-exceptions.html" target="_blank">Spring 官方文档 - REST Exception Handling</a></p>
+<p>延伸：<a href="https://springdoc.org/" target="_blank">SpringDoc OpenAPI - 自动生成 API 文档</a></p>
+<p>参考：<a href="../reference/glossary.html">术语表</a></p>
+
+<div class="lesson-nav">
+  <a href="0012-bean-validation.html"><- 上一课：参数校验</a>
+  <a href="../MISSION.html">返回学习使命</a>
+</div>
+
+<div class="footer">
+  <p>有任何不清楚的地方？直接问我！我是你的 Java 后端老师，随时帮你解决疑问。</p>
+</div>
+
+<script>
+function checkAnswer(el, isCorrect) {
+  var options = el.parentNode.querySelectorAll('.quiz-option');
+  var feedback = document.getElementById('quiz-feedback');
+  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
+  if (isCorrect) {
+    el.classList.add('correct');
+    feedback.className = 'quiz-feedback show correct';
+    feedback.textContent = '正确！泛型 T 是 data 字段的类型。Result<User> 的 data 是 User 对象，Result<Page<User>> 的 data 是分页对象。类似 TypeScript 的 Result<T> interface。';
+  } else {
+    el.classList.add('incorrect');
+    feedback.className = 'quiz-feedback show incorrect';
+    feedback.textContent = '不对。T 不是状态码或消息类型，它代表 data 字段的数据类型。比如 Result<User> 中 T=User，data 就是 User 对象。';
+  }
+}
+
+function checkAnswer2(el, isCorrect) {
+  var options = el.parentNode.querySelectorAll('.quiz-option');
+  var feedback = document.getElementById('quiz-feedback-2');
+  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
+  if (isCorrect) {
+    el.classList.add('correct');
+    feedback.className = 'quiz-feedback show correct';
+    feedback.textContent = '正确！错误和成功都返回 Result 格式，前端只需写一套拦截器逻辑：判断 code，200 取 data，非 200 弹 message。不用为每个接口写不同的错误处理。';
+  } else {
+    el.classList.add('incorrect');
+    feedback.className = 'quiz-feedback show incorrect';
+    feedback.textContent = '不对。统一格式不是为了数据量或速度，而是让前端能用一套逻辑处理所有响应 -- 成功取 data，失败弹 message，不用猜返回结构。';
+  }
+}
+
+function checkAnswer3(el, isCorrect) {
+  var options = el.parentNode.querySelectorAll('.quiz-option');
+  var feedback = document.getElementById('quiz-feedback-3');
+  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
+  if (isCorrect) {
+    el.classList.add('correct');
+    feedback.className = 'quiz-feedback show correct';
+    feedback.textContent = '正确！实际数据在 response.data 字段中。前端 Axios 拦截器里 return res.data.data 就能直接拿到业务数据（User、Page 等），不需要手动解包。';
+  } else {
+    el.classList.add('incorrect');
+    feedback.className = 'quiz-feedback show incorrect';
+    feedback.textContent = '不对。code 是状态码，message 是提示消息，headers 是 HTTP 头。实际业务数据在 data 字段中。';
+  }
+}
+</script>
+
+</body>
+</html>
