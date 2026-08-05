@@ -384,40 +384,62 @@ Content-Type: application/json<br><br>
   </tr>
 </table>
 
-<div class="quiz">
-  <h3>小测验</h3>
-  <p class="quiz-question">@PathVariable 和 @RequestParam 的使用场景区别？</p>
-  <ul class="quiz-options">
-    <li class="quiz-option" onclick="checkAnswer(this, false)">两者完全等价可互换使用</li>
-    <li class="quiz-option" onclick="checkAnswer(this, true)">PathVariable 定位资源 Param 过滤</li>
-    <li class="quiz-option" onclick="checkAnswer(this, false)">RequestParam 比 PathVariable 更安全</li>
-    <li class="quiz-option" onclick="checkAnswer(this, false)">PathVariable 只能用于 POST 请求</li>
-  </ul>
-  <div class="quiz-feedback" id="quiz-feedback"></div>
-</div>
+<div class="challenge">
+  <div class="challenge-header">
+    <span class="challenge-badge">实战</span>
+    <h3>动手挑战：天气查询 API</h3>
+  </div>
+  <p class="challenge-context">你学会了 @PathVariable 和 DTO。现在创建一个不依赖数据库的天气查询 API，练习路径参数和结构化返回。</p>
 
-<div class="quiz">
-  <h3>小测验</h3>
-  <p class="quiz-question">Java Record 和 TypeScript interface 有什么共同点？</p>
-  <ul class="quiz-options">
-    <li class="quiz-option" onclick="checkAnswer2(this, false)">两者都是用来继承父类的</li>
-    <li class="quiz-option" onclick="checkAnswer2(this, true)">两者都定义数据结构字段</li>
-    <li class="quiz-option" onclick="checkAnswer2(this, false)">两者都包含业务逻辑方法</li>
-    <li class="quiz-option" onclick="checkAnswer2(this, false)">两者都运行时类型检查</li>
-  </ul>
-  <div class="quiz-feedback" id="quiz-feedback-2"></div>
-</div>
+  <div class="challenge-requirements">
+    <h4>需求</h4>
+    <ul>
+      <li>创建 <code>Weather</code> DTO 类（record 或 Lombok <code>@Data</code>），字段：<code>String city</code>, <code>int temperature</code>, <code>String condition</code></li>
+      <li>在 <code>controller</code> 包下新建 <code>WeatherController.java</code></li>
+      <li><code>GET /weather/{city}</code> -> 返回该城市的 Weather DTO</li>
+      <li>内存中存 3 个城市数据（用 Map 或 List），如：beijing/25/晴, shanghai/28/多云, guangzhou/30/雷阵雨</li>
+      <li>城市不存在时返回 <code>null</code>（暂不处理异常，下几课再学）</li>
+    </ul>
+  </div>
 
-<div class="quiz">
-  <h3>小测验</h3>
-  <p class="quiz-question">Java 中比较两个 Long 对象的值是否相等，应该用？</p>
-  <ul class="quiz-options">
-    <li class="quiz-option" onclick="checkAnswer3(this, false)">使用 == 运算符直接比较</li>
-    <li class="quiz-option" onclick="checkAnswer3(this, true)">使用 equals 方法比较</li>
-    <li class="quiz-option" onclick="checkAnswer3(this, false)">使用 compare 运算符比较</li>
-    <li class="quiz-option" onclick="checkAnswer3(this, false)">使用 === 运算符比较</li>
+  <div class="challenge-files">
+    <h4>需要创建的文件</h4>
+    <ol>
+      <li><code>entity/Weather.java</code> - DTO 类（record 或 Lombok <code>@Data</code>）</li>
+      <li><code>controller/WeatherController.java</code> - 天气控制器</li>
+    </ol>
+  </div>
+
+  <h4>验收清单（我会逐项检查）</h4>
+  <ul class="challenge-checklist">
+    <li>Weather 类定义了 city、temperature、condition 三个字段</li>
+    <li>Controller 用 <code>@GetMapping("/weather/{city}")</code></li>
+    <li>用 <code>@PathVariable String city</code> 接收路径参数</li>
+    <li>内存中至少存了 3 个城市</li>
+    <li>访问 <code>/weather/beijing</code> 返回 JSON 格式的天气数据</li>
+    <li>访问不存在的城市返回 <code>null</code></li>
+    <li>代码能编译通过</li>
   </ul>
-  <div class="quiz-feedback" id="quiz-feedback-3"></div>
+
+  <details class="challenge-hints">
+    <summary>卡住了？点开看提示（建议先自己想 5 分钟）</summary>
+    <details>
+      <summary>提示 1：DTO 用 record 还是普通类？</summary>
+      <p>都可以。record 更简洁（JDK 14+）：<code>public record Weather(String city, int temperature, String condition) {}</code>。JDK 8 用 Lombok <code>@Data</code> + <code>@AllArgsConstructor</code>。</p>
+    </details>
+    <details>
+      <summary>提示 2：内存数据怎么存？</summary>
+      <p>用 <code>Map&lt;String, Weather&gt;</code>。<code>Map.of("beijing", new Weather("beijing", 25, "晴"), ...)</code>（JDK 9+）或 <code>HashMap</code> + <code>put</code>（JDK 8）。</p>
+    </details>
+    <details>
+      <summary>提示 3：找不到城市怎么办？</summary>
+      <p><code>map.get(city)</code> 找不到自然返回 null。Spring 会把 null 序列化成 JSON 的 <code>null</code>。</p>
+    </details>
+  </details>
+
+  <div class="challenge-submit">
+    <p><strong>完成后告诉我「评审」或「完成了」</strong>，我会读取你的代码，对照验收清单逐项点评，并给出改进建议。</p>
+  </div>
 </div>
 
 <div class="callout callout-tip">
@@ -437,53 +459,6 @@ Content-Type: application/json<br><br>
 <div class="footer">
   <p>有任何不清楚的地方？直接问我！我是你的 Java 后端老师，随时帮你解决疑问。</p>
 </div>
-
-<script>
-function checkAnswer(el, isCorrect) {
-  var options = el.parentNode.querySelectorAll('.quiz-option');
-  var feedback = document.getElementById('quiz-feedback');
-  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
-  if (isCorrect) {
-    el.classList.add('correct');
-    feedback.className = 'quiz-feedback show correct';
-    feedback.textContent = '正确！@PathVariable 用于路径中的资源标识（/users/42），@RequestParam 用于查询参数过滤（/users?name=Vue）。就像 Vue Router 的 :id vs URL query string。';
-  } else {
-    el.classList.add('incorrect');
-    feedback.className = 'quiz-feedback show incorrect';
-    feedback.textContent = '不对。两者用途不同：@PathVariable 从路径中取值（定位资源），@RequestParam 从查询字符串取值（过滤条件）。';
-  }
-}
-
-function checkAnswer2(el, isCorrect) {
-  var options = el.parentNode.querySelectorAll('.quiz-option');
-  var feedback = document.getElementById('quiz-feedback-2');
-  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
-  if (isCorrect) {
-    el.classList.add('correct');
-    feedback.className = 'quiz-feedback show correct';
-    feedback.textContent = '正确！两者都用来定义数据结构的字段列表。Record 是 Java 的数据载体，interface 是 TS 的类型约束，目的相同。';
-  } else {
-    el.classList.add('incorrect');
-    feedback.className = 'quiz-feedback show incorrect';
-    feedback.textContent = '不对。Record 和 interface 都不是用来继承的，它们定义的是数据字段结构，类似于定义一个对象的形状。';
-  }
-}
-
-function checkAnswer3(el, isCorrect) {
-  var options = el.parentNode.querySelectorAll('.quiz-option');
-  var feedback = document.getElementById('quiz-feedback-3');
-  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
-  if (isCorrect) {
-    el.classList.add('correct');
-    feedback.className = 'quiz-feedback show correct';
-    feedback.textContent = '正确！Long 是对象类型，== 比较的是引用地址不是值。必须用 equals() 比较值是否相等，这是和 JS === 最大的区别。';
-  } else {
-    el.classList.add('incorrect');
-    feedback.className = 'quiz-feedback show incorrect';
-    feedback.textContent = '不对。Java 中 == 对对象类型比较的是内存地址，不是值。Long 是对象类型，比较值必须用 equals()。JS 的 === 对基本类型比较值，但 Java 不是。';
-  }
-}
-</script>
 
 </body>
 </html>

@@ -302,6 +302,135 @@ tr:nth-child(even) {
   color: #b91c1c;
 }
 
+/* ---- 动手挑战（实战练习） ---- */
+.challenge {
+  background: #faf5ff;
+  border: 2px solid #a855f7;
+  border-radius: 10px;
+  padding: 1.5rem;
+  margin: 2rem 0;
+}
+
+.challenge-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.3rem;
+}
+
+.challenge-header h3 {
+  margin-top: 0;
+  margin-bottom: 0;
+  color: #7c3aed;
+}
+
+.challenge-badge {
+  display: inline-block;
+  background: #7c3aed;
+  color: white;
+  font-size: 0.72rem;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.challenge-context {
+  color: #4b5563;
+  font-size: 0.92rem;
+  margin-bottom: 1rem;
+}
+
+.challenge-requirements {
+  background: white;
+  border-radius: 6px;
+  padding: 1rem 1.2rem;
+  margin: 1rem 0;
+  border-left: 3px solid #a855f7;
+}
+
+.challenge-requirements h4 {
+  margin-top: 0;
+  margin-bottom: 0.6rem;
+  font-size: 0.95rem;
+  color: #6b21a8;
+}
+
+.challenge-files {
+  background: #f5f3ff;
+  border-radius: 6px;
+  padding: 0.8rem 1.2rem;
+  margin: 1rem 0;
+  font-size: 0.88rem;
+}
+
+.challenge-files h4 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  color: #6b21a8;
+}
+
+.challenge-checklist {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0;
+}
+
+.challenge-checklist li {
+  padding-left: 1.8rem;
+  position: relative;
+  margin-bottom: 0.5rem;
+  font-size: 0.92rem;
+}
+
+.challenge-checklist li::before {
+  content: "\2610";
+  position: absolute;
+  left: 0;
+  top: -0.05rem;
+  font-size: 1.15rem;
+  color: #a855f7;
+}
+
+.challenge-hints {
+  margin-top: 1.2rem;
+}
+
+.challenge-hints > summary,
+.challenge-hints details > summary {
+  cursor: pointer;
+  color: #7c3aed;
+  font-weight: 500;
+  padding: 0.4rem 0;
+  font-size: 0.9rem;
+}
+
+.challenge-hints details {
+  margin-bottom: 0.5rem;
+  background: white;
+  border-radius: 6px;
+  padding: 0.6rem 1rem;
+  border: 1px solid #e9d5ff;
+}
+
+.challenge-hints details[open] > summary {
+  margin-bottom: 0.6rem;
+}
+
+.challenge-submit {
+  background: #f3e8ff;
+  border: 2px dashed #a855f7;
+  border-radius: 8px;
+  padding: 1rem 1.2rem;
+  margin-top: 1.5rem;
+}
+
+.challenge-submit strong {
+  color: #7c3aed;
+}
+
 /* ---- 终端/命令提示 ---- */
 .terminal {
   background: #0f172a;

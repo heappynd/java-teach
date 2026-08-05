@@ -340,40 +340,62 @@ const user = await axios.get('/api/users/1')  // 直接拿到 User</code></pre>
   <p>Result 是普通 Java 泛型类，JDK 5+ 就支持。Lombok 的 <code>@Data</code> 兼容 JDK 8。Stream API 是 JDK 8 原生特性。无兼容性问题。</p>
 </div>
 
-<div class="quiz">
-  <h3>小测验</h3>
-  <p class="quiz-question">统一响应格式 Result&lt;T&gt; 中泛型 T 代表什么？</p>
-  <ul class="quiz-options">
-    <li class="quiz-option" onclick="checkAnswer(this, false)">代表 HTTP 状态码类型</li>
-    <li class="quiz-option" onclick="checkAnswer(this, true)">代表 data 字段的数据类型</li>
-    <li class="quiz-option" onclick="checkAnswer(this, false)">代表错误消息的字符串类型</li>
-    <li class="quiz-option" onclick="checkAnswer(this, false)">代表请求参数的映射类型</li>
-  </ul>
-  <div class="quiz-feedback" id="quiz-feedback"></div>
-</div>
+<div class="challenge">
+  <div class="challenge-header">
+    <span class="challenge-badge">实战</span>
+    <h3>动手挑战：批量删除用户接口</h3>
+  </div>
+  <p class="challenge-context">你的 User CRUD 已经全部用上了 <code>Result</code> 统一格式。现在产品提了个新需求：前端要能一次性删除多个用户，发一个 ID 列表过来，后端批量删除并返回统一格式的响应。请在 demo 项目中实现这个功能。</p>
 
-<div class="quiz">
-  <h3>小测验</h3>
-  <p class="quiz-question">为什么错误响应也用 Result 格式包装？</p>
-  <ul class="quiz-options">
-    <li class="quiz-option" onclick="checkAnswer2(this, false)">为了增加响应的数据量大小</li>
-    <li class="quiz-option" onclick="checkAnswer2(this, true)">为了让前端统一一套逻辑处理</li>
-    <li class="quiz-option" onclick="checkAnswer2(this, false)">为了提高服务器的响应速度</li>
-    <li class="quiz-option" onclick="checkAnswer2(this, false)">为了兼容旧版本的浏览器</li>
-  </ul>
-  <div class="quiz-feedback" id="quiz-feedback-2"></div>
-</div>
+  <div class="challenge-requirements">
+    <h4>需求</h4>
+    <ul>
+      <li>接口路径：<code>DELETE /users/batch</code></li>
+      <li>请求体：JSON 数组，如 <code>[1, 2, 3]</code></li>
+      <li>成功时：返回 <code>Result&lt;Long&gt;</code>，<code>data</code> 为实际删除的数量</li>
+      <li>边界情况：传入空列表 <code>[]</code> 时，抛出 <code>IllegalArgumentException("删除列表不能为空")</code>，由 <a href="0011-global-exception-handling.html">全局异常处理器</a>返回 400</li>
+    </ul>
+  </div>
 
-<div class="quiz">
-  <h3>小测验</h3>
-  <p class="quiz-question">前端如何从 Result 格式中取出实际数据？</p>
-  <ul class="quiz-options">
-    <li class="quiz-option" onclick="checkAnswer3(this, false)">从 response.code 字段中取</li>
-    <li class="quiz-option" onclick="checkAnswer3(this, true)">从 response.data 字段中取</li>
-    <li class="quiz-option" onclick="checkAnswer3(this, false)">从 response.message 字段中取</li>
-    <li class="quiz-option" onclick="checkAnswer3(this, false)">从 response.headers 中取</li>
+  <div class="challenge-files">
+    <h4>需要改动的文件</h4>
+    <ol>
+      <li><code>service/UserService.java</code> — 添加接口方法声明</li>
+      <li><code>service/UserServiceImpl.java</code> — 实现方法（含空列表校验）</li>
+      <li><code>controller/UserController.java</code> — 添加接口端点</li>
+    </ol>
+  </div>
+
+  <h4>验收清单（我会逐项检查）</h4>
+  <ul class="challenge-checklist">
+    <li>Controller 用 <code>@DeleteMapping("/batch")</code>，参数用 <code>@RequestBody List&lt;Long&gt; ids</code></li>
+    <li>返回类型是 <code>Result&lt;Long&gt;</code>（或 <code>Result&lt;?&gt;</code>）</li>
+    <li>Service 接口声明了 <code>batchDelete</code> 方法</li>
+    <li>ServiceImpl 中有空列表校验，抛 <code>IllegalArgumentException</code></li>
+    <li>空列表请求返回 <code>{"code":400,"message":"删除列表不能为空","data":null}</code></li>
+    <li>正常请求返回 <code>{"code":200,"message":"success","data":3}</code>（删除数量）</li>
+    <li>代码能编译通过</li>
   </ul>
-  <div class="quiz-feedback" id="quiz-feedback-3"></div>
+
+  <details class="challenge-hints">
+    <summary>卡住了？点开看提示（建议先自己想 5 分钟）</summary>
+    <details>
+      <summary>提示 1：Controller 怎么接收 JSON 数组？</summary>
+      <p>用 <code>@RequestBody List&lt;Long&gt; ids</code>。Spring 会自动把 JSON 数组 <code>[1,2,3]</code> 反序列化成 <code>List&lt;Long&gt;</code>。记得 <code>import java.util.List;</code></p>
+    </details>
+    <details>
+      <summary>提示 2：MyBatis Plus 怎么批量删除？</summary>
+      <p><code>IService</code> 已经提供了 <code>removeByIds(Collection&lt;?&gt; ids)</code> 方法，直接调用即可。返回删除数量可以简单用 <code>ids.size()</code>（<code>removeByIds</code> 成功即表示都删了）。</p>
+    </details>
+    <details>
+      <summary>提示 3：空列表校验放哪一层？</summary>
+      <p>放在 <code>UserServiceImpl</code> 里。Controller 只做参数接收和返回包装，业务校验放 Service。抛 <code>IllegalArgumentException</code>，<code>GlobalExceptionHandler</code> 已经能处理（<a href="0011-global-exception-handling.html">第 11 课</a>学过，无需改动）。</p>
+    </details>
+  </details>
+
+  <div class="challenge-submit">
+    <p><strong>完成后告诉我「评审」或「完成了」</strong>，我会读取你在 demo 项目里写的代码，对照上面的验收清单逐项点评，并给出改进建议。这就是你的反馈闭环。</p>
+  </div>
 </div>
 
 <div class="callout callout-tip">
@@ -392,7 +414,7 @@ const user = await axios.get('/api/users/1')  // 直接拿到 User</code></pre>
     <li>参数校验</li>
     <li>统一响应格式</li>
   </ol>
-  <p>你现在能独立构建一个规范的后端 API 服务，与 Vue3 前端对接，完成全栈开发。接下来在实践中成长 -- 做一个真实项目，遇到问题随时回来问我！</p>
+  <p>上面的实战挑战是你把所有知识串起来的第一次综合练习。完成它，告诉我「评审」，我会帮你把代码打磨到位。接下来在实践中成长 -- 做一个真实项目，遇到问题随时回来问我！</p>
 </div>
 
 <h2>推荐阅读</h2>
@@ -408,53 +430,6 @@ const user = await axios.get('/api/users/1')  // 直接拿到 User</code></pre>
 <div class="footer">
   <p>有任何不清楚的地方？直接问我！我是你的 Java 后端老师，随时帮你解决疑问。</p>
 </div>
-
-<script>
-function checkAnswer(el, isCorrect) {
-  var options = el.parentNode.querySelectorAll('.quiz-option');
-  var feedback = document.getElementById('quiz-feedback');
-  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
-  if (isCorrect) {
-    el.classList.add('correct');
-    feedback.className = 'quiz-feedback show correct';
-    feedback.textContent = '正确！泛型 T 是 data 字段的类型。Result<User> 的 data 是 User 对象，Result<Page<User>> 的 data 是分页对象。类似 TypeScript 的 Result<T> interface。';
-  } else {
-    el.classList.add('incorrect');
-    feedback.className = 'quiz-feedback show incorrect';
-    feedback.textContent = '不对。T 不是状态码或消息类型，它代表 data 字段的数据类型。比如 Result<User> 中 T=User，data 就是 User 对象。';
-  }
-}
-
-function checkAnswer2(el, isCorrect) {
-  var options = el.parentNode.querySelectorAll('.quiz-option');
-  var feedback = document.getElementById('quiz-feedback-2');
-  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
-  if (isCorrect) {
-    el.classList.add('correct');
-    feedback.className = 'quiz-feedback show correct';
-    feedback.textContent = '正确！错误和成功都返回 Result 格式，前端只需写一套拦截器逻辑：判断 code，200 取 data，非 200 弹 message。不用为每个接口写不同的错误处理。';
-  } else {
-    el.classList.add('incorrect');
-    feedback.className = 'quiz-feedback show incorrect';
-    feedback.textContent = '不对。统一格式不是为了数据量或速度，而是让前端能用一套逻辑处理所有响应 -- 成功取 data，失败弹 message，不用猜返回结构。';
-  }
-}
-
-function checkAnswer3(el, isCorrect) {
-  var options = el.parentNode.querySelectorAll('.quiz-option');
-  var feedback = document.getElementById('quiz-feedback-3');
-  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
-  if (isCorrect) {
-    el.classList.add('correct');
-    feedback.className = 'quiz-feedback show correct';
-    feedback.textContent = '正确！实际数据在 response.data 字段中。前端 Axios 拦截器里 return res.data.data 就能直接拿到业务数据（User、Page 等），不需要手动解包。';
-  } else {
-    el.classList.add('incorrect');
-    feedback.className = 'quiz-feedback show incorrect';
-    feedback.textContent = '不对。code 是状态码，message 是提示消息，headers 是 HTTP 头。实际业务数据在 data 字段中。';
-  }
-}
-</script>
 
 </body>
 </html>

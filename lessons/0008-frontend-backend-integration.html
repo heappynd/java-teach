@@ -523,40 +523,63 @@ onMounted(loadData)
   </tr>
 </table>
 
-<div class="quiz">
-  <h3>小测验</h3>
-  <p class="quiz-question">浏览器阻止跨域请求时，请求是否到达了后端？</p>
-  <ul class="quiz-options">
-    <li class="quiz-option" onclick="checkAnswer(this, false)">没有到达后端被浏览器拦截</li>
-    <li class="quiz-option" onclick="checkAnswer(this, true)">到达后端了但浏览器不给响应</li>
-    <li class="quiz-option" onclick="checkAnswer(this, false)">后端收到了但拒绝返回数据</li>
-    <li class="quiz-option" onclick="checkAnswer(this, false)">浏览器和后端都没有处理</li>
-  </ul>
-  <div class="quiz-feedback" id="quiz-feedback"></div>
-</div>
+<div class="challenge">
+  <div class="challenge-header">
+    <span class="challenge-badge">实战</span>
+    <h3>动手挑战：配置 CORS 跨域</h3>
+  </div>
+  <p class="challenge-context">你的后端 API 目前没有 CORS 配置，Vue3 前端（不同端口）直接调用会被浏览器拦截。现在动手配置 CORS，让前端能跨域访问。</p>
 
-<div class="quiz">
-  <h3>小测验</h3>
-  <p class="quiz-question">Vite 代理为什么能解决跨域问题？</p>
-  <ul class="quiz-options">
-    <li class="quiz-option" onclick="checkAnswer2(this, true)">请求发给同源的 Vite 再转发</li>
-    <li class="quiz-option" onclick="checkAnswer2(this, false)">Vite 修改了浏览器的安全策略</li>
-    <li class="quiz-option" onclick="checkAnswer2(this, false)">Vite 给请求加上了 CORS 头</li>
-    <li class="quiz-option" onclick="checkAnswer2(this, false)">Vite 和后端共享同一个端口</li>
-  </ul>
-  <div class="quiz-feedback" id="quiz-feedback-2"></div>
-</div>
+  <div class="challenge-requirements">
+    <h4>需求</h4>
+    <ul>
+      <li>在 <code>com.yourname.demo</code> 根包下新建 <code>CorsConfig.java</code>（与 <code>DemoApplication</code> 同级）</li>
+      <li>实现 <code>WebMvcConfigurer</code> 接口，重写 <code>addCorsMappings</code> 方法</li>
+      <li>允许的前端源：<code>http://localhost:5173</code> 和 <code>http://localhost:4173</code>（Vite 预览端口）</li>
+      <li>允许的方法：GET、POST、PUT、DELETE、OPTIONS</li>
+      <li>允许所有请求头</li>
+      <li>允许携带 Cookie</li>
+    </ul>
+  </div>
 
-<div class="quiz">
-  <h3>小测验</h3>
-  <p class="quiz-question">Spring Boot 的 CORS 配置中 allowedOrigins 的作用是什么？</p>
-  <ul class="quiz-options">
-    <li class="quiz-option" onclick="checkAnswer3(this, false)">限制后端只能访问的前端地址</li>
-    <li class="quiz-option" onclick="checkAnswer3(this, true)">声明允许访问后端的前端地址</li>
-    <li class="quiz-option" onclick="checkAnswer3(this, false)">设置前端静态资源的存放路径</li>
-    <li class="quiz-option" onclick="checkAnswer3(this, false)">配置数据库连接的来源地址</li>
+  <div class="challenge-files">
+    <h4>需要创建的文件</h4>
+    <ol>
+      <li><code>CorsConfig.java</code> - CORS 配置类</li>
+    </ol>
+  </div>
+
+  <h4>验收清单（我会逐项检查）</h4>
+  <ul class="challenge-checklist">
+    <li>类上有 <code>@Configuration</code> 注解</li>
+    <li>实现 <code>WebMvcConfigurer</code> 接口</li>
+    <li><code>addMapping("/**")</code> 对所有路径生效</li>
+    <li><code>allowedOrigins</code> 包含两个地址（5173 和 4173）</li>
+    <li><code>allowedMethods</code> 包含 GET/POST/PUT/DELETE/OPTIONS</li>
+    <li><code>allowedHeaders("*")</code></li>
+    <li><code>allowCredentials(true)</code></li>
+    <li>代码能编译通过</li>
   </ul>
-  <div class="quiz-feedback" id="quiz-feedback-3"></div>
+
+  <details class="challenge-hints">
+    <summary>卡住了？点开看提示（建议先自己想 5 分钟）</summary>
+    <details>
+      <summary>提示 1：怎么允许两个源？</summary>
+      <p><code>.allowedOrigins("http://localhost:5173", "http://localhost:4173")</code> -- 传多个参数即可。</p>
+    </details>
+    <details>
+      <summary>提示 2：需要哪些 import？</summary>
+      <p><code>import org.springframework.context.annotation.Configuration;</code><br><code>import org.springframework.web.servlet.config.annotation.CorsRegistry;</code><br><code>import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;</code></p>
+    </details>
+    <details>
+      <summary>提示 3：怎么验证生效？</summary>
+      <p>用浏览器控制台 fetch 调用 <code>http://localhost:8080/users</code>，如果响应头中有 <code>Access-Control-Allow-Origin</code> 就说明配置生效了。</p>
+    </details>
+  </details>
+
+  <div class="challenge-submit">
+    <p><strong>完成后告诉我「评审」或「完成了」</strong>，我会读取你的代码，对照验收清单逐项点评，并给出改进建议。</p>
+  </div>
 </div>
 
 <div class="callout callout-tip">
@@ -578,53 +601,6 @@ onMounted(loadData)
 <div class="footer">
   <p>有任何不清楚的地方？直接问我！我是你的 Java 后端老师，随时帮你解决疑问。</p>
 </div>
-
-<script>
-function checkAnswer(el, isCorrect) {
-  var options = el.parentNode.querySelectorAll('.quiz-option');
-  var feedback = document.getElementById('quiz-feedback');
-  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
-  if (isCorrect) {
-    el.classList.add('correct');
-    feedback.className = 'quiz-feedback show correct';
-    feedback.textContent = '正确！CORS 是浏览器端的安全策略。请求实际上已经发到后端并被处理了，只是浏览器检查响应头后发现后端没有声明允许跨域，于是拒绝把响应交给 JS。这就是为什么你在 Network 面板能看到请求，但 JS 拿不到数据。';
-  } else {
-    el.classList.add('incorrect');
-    feedback.className = 'quiz-feedback show incorrect';
-    feedback.textContent = '不对。请求确实到达了后端，后端也处理了并返回了响应。是浏览器在收到响应后检查 CORS 头，发现不允许跨域，于是不给 JS 读取响应。';
-  }
-}
-
-function checkAnswer2(el, isCorrect) {
-  var options = el.parentNode.querySelectorAll('.quiz-option');
-  var feedback = document.getElementById('quiz-feedback-2');
-  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
-  if (isCorrect) {
-    el.classList.add('correct');
-    feedback.className = 'quiz-feedback show correct';
-    feedback.textContent = '正确！Vue3 发请求到 /api/users（同源，localhost:5173），Vite dev server 收到后转发到 localhost:8080/users。浏览器只看到同源请求，不触发 CORS 检查。服务器之间的转发不受同源策略限制。';
-  } else {
-    el.classList.add('incorrect');
-    feedback.className = 'quiz-feedback show incorrect';
-    feedback.textContent = '不对。Vite 不能修改浏览器的安全策略，也不和后端共享端口。它的原理是作为同源中间人转发请求 -- 浏览器看到的是发往 localhost:5173 的同源请求。';
-  }
-}
-
-function checkAnswer3(el, isCorrect) {
-  var options = el.parentNode.querySelectorAll('.quiz-option');
-  var feedback = document.getElementById('quiz-feedback-3');
-  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
-  if (isCorrect) {
-    el.classList.add('correct');
-    feedback.className = 'quiz-feedback show correct';
-    feedback.textContent = '正确！allowedOrigins 是后端声明的"前端白名单" -- 只有列表中的源发来的请求才允许跨域访问。浏览器看到响应头中的 Access-Control-Allow-Origin 与自己匹配，就放行 JS 读取响应。';
-  } else {
-    el.classList.add('incorrect');
-    feedback.className = 'quiz-feedback show incorrect';
-    feedback.textContent = '不对。allowedOrigins 不是限制后端访问谁，而是声明哪些前端地址可以跨域访问后端。相当于后端说"我允许这些前端来调用我"。';
-  }
-}
-</script>
 
 </body>
 </html>

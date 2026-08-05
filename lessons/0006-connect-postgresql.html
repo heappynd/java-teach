@@ -515,40 +515,75 @@ Content-Type: application/json
 
 <p>这就是后端最经典的三层架构：Controller -> Mapper -> Database。你在 Vue3 前端用 axios 调用的接口，背后就是这个结构。</p>
 
-<div class="quiz">
-  <h3>小测验</h3>
-  <p class="quiz-question">继承 BaseMapper 后自动获得了什么？</p>
-  <ul class="quiz-options">
-    <li class="quiz-option" onclick="checkAnswer(this, false)">免手写 CSS 的页面样式</li>
-    <li class="quiz-option" onclick="checkAnswer(this, true)">免手写 SQL 的增删改查</li>
-    <li class="quiz-option" onclick="checkAnswer(this, false)">免手写 JS 的交互逻辑</li>
-    <li class="quiz-option" onclick="checkAnswer(this, false)">免手写 HTML 的标签结构</li>
-  </ul>
-  <div class="quiz-feedback" id="quiz-feedback"></div>
-</div>
+<div class="challenge">
+  <div class="challenge-header">
+    <span class="challenge-badge">实战</span>
+    <h3>动手挑战：创建 Product 实体并查询</h3>
+  </div>
+  <p class="challenge-context">你已经学会了 Entity + Mapper + BaseMapper 的套路。现在独立创建一个全新的 Product 资源，验证你理解了数据库映射机制。</p>
 
-<div class="quiz">
-  <h3>小测验</h3>
-  <p class="quiz-question">为什么数据库 Entity 不能用 record？</p>
-  <ul class="quiz-options">
-    <li class="quiz-option" onclick="checkAnswer2(this, false)">record 不能定义任何字段</li>
-    <li class="quiz-option" onclick="checkAnswer2(this, true)">record 缺少无参构造方法</li>
-    <li class="quiz-option" onclick="checkAnswer2(this, false)">record 无法被序列化处理</li>
-    <li class="quiz-option" onclick="checkAnswer2(this, false)">record 不支持继承扩展</li>
-  </ul>
-  <div class="quiz-feedback" id="quiz-feedback-2"></div>
-</div>
+  <div class="challenge-requirements">
+    <h4>需求</h4>
+    <ul>
+      <li>在 DBeaver 中执行 SQL 创建表并插入数据：</li>
+    </ul>
+    <pre><code>CREATE TABLE products (
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    price DECIMAL(10, 2)
+);
 
-<div class="quiz">
-  <h3>小测验</h3>
-  <p class="quiz-question">selectList(null) 中的 null 表示什么？</p>
-  <ul class="quiz-options">
-    <li class="quiz-option" onclick="checkAnswer3(this, true)">无条件查询返回所有行</li>
-    <li class="quiz-option" onclick="checkAnswer3(this, false)">数据库连接对象为空值</li>
-    <li class="quiz-option" onclick="checkAnswer3(this, false)">查询结果列表返回空值</li>
-    <li class="quiz-option" onclick="checkAnswer3(this, false)">SQL 语句存在空值错误</li>
+INSERT INTO products (name, price) VALUES
+    ('Keyboard', 199.00),
+    ('Mouse', 89.50),
+    ('Monitor', 1299.00);</code></pre>
+    <ul>
+      <li>创建 <code>Product</code> 实体类，映射到 <code>products</code> 表</li>
+      <li>创建 <code>ProductMapper</code> 继承 <code>BaseMapper&lt;Product&gt;</code></li>
+      <li>创建 <code>ProductController</code>，提供 <code>GET /products</code> 返回所有商品</li>
+    </ul>
+  </div>
+
+  <div class="challenge-files">
+    <h4>需要创建的文件</h4>
+    <ol>
+      <li><code>entity/Product.java</code> - 实体类</li>
+      <li><code>mapper/ProductMapper.java</code> - Mapper 接口</li>
+      <li><code>controller/ProductController.java</code> - 控制器</li>
+    </ol>
+  </div>
+
+  <h4>验收清单（我会逐项检查）</h4>
+  <ul class="challenge-checklist">
+    <li>Product 类有 <code>@TableName("products")</code> 注解</li>
+    <li>id 字段有 <code>@TableId(type = IdType.AUTO)</code></li>
+    <li>有 name 和 price 字段（price 用 <code>BigDecimal</code> 或 <code>Double</code>）</li>
+    <li>ProductMapper 继承 <code>BaseMapper&lt;Product&gt;</code></li>
+    <li>ProductController 有 <code>@RestController</code> 和 <code>@GetMapping</code></li>
+    <li>用构造器注入或 <code>@Autowired</code> 注入 ProductMapper</li>
+    <li>访问 <code>GET /products</code> 返回 3 条商品数据</li>
+    <li>代码能编译通过</li>
   </ul>
-  <div class="quiz-feedback" id="quiz-feedback-3"></div>
+
+  <details class="challenge-hints">
+    <summary>卡住了？点开看提示（建议先自己想 5 分钟）</summary>
+    <details>
+      <summary>提示 1：price 字段用什么类型？</summary>
+      <p>数据库 <code>DECIMAL(10,2)</code> 对应 Java 的 <code>BigDecimal</code>（推荐，精度安全）。也可以用 <code>Double</code>，但不建议用于金额。</p>
+    </details>
+    <details>
+      <summary>提示 2：Mapper 怎么写？</summary>
+      <p>和 UserMapper 一模一样的套路：<code>public interface ProductMapper extends BaseMapper&lt;Product&gt; {}</code>。空的就行，继承即获得 CRUD。</p>
+    </details>
+    <details>
+      <summary>提示 3：Controller 查全部怎么写？</summary>
+      <p><code>return productMapper.selectList(null)</code>。null 表示无条件，查全部。</p>
+    </details>
+  </details>
+
+  <div class="challenge-submit">
+    <p><strong>完成后告诉我「评审」或「完成了」</strong>，我会读取你的代码，对照验收清单逐项点评，并给出改进建议。</p>
+  </div>
 </div>
 
 <div class="callout callout-tip">
@@ -568,53 +603,6 @@ Content-Type: application/json
 <div class="footer">
   <p>有任何不清楚的地方？直接问我！我是你的 Java 后端老师，随时帮你解决疑问。</p>
 </div>
-
-<script>
-function checkAnswer(el, isCorrect) {
-  var options = el.parentNode.querySelectorAll('.quiz-option');
-  var feedback = document.getElementById('quiz-feedback');
-  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
-  if (isCorrect) {
-    el.classList.add('correct');
-    feedback.className = 'quiz-feedback show correct';
-    feedback.textContent = '正确！继承 BaseMapper 后自动获得 insert、deleteById、updateById、selectById、selectList 等 CRUD 方法，无需手写 SQL。就像 Prisma Client 自动生成 CRUD 一样。';
-  } else {
-    el.classList.add('incorrect');
-    feedback.className = 'quiz-feedback show incorrect';
-    feedback.textContent = '不对。BaseMapper 是数据层工具，和前端 CSS/JS/HTML 无关。它自动提供的是数据库增删改查方法。';
-  }
-}
-
-function checkAnswer2(el, isCorrect) {
-  var options = el.parentNode.querySelectorAll('.quiz-option');
-  var feedback = document.getElementById('quiz-feedback-2');
-  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
-  if (isCorrect) {
-    el.classList.add('correct');
-    feedback.className = 'quiz-feedback show correct';
-    feedback.textContent = '正确！record 没有无参构造器，也没有 setter。MyBatis Plus 需要先 new User() 再通过 setter 填充字段，所以 Entity 必须用普通类。这是所有 Java ORM 框架的通用要求。';
-  } else {
-    el.classList.add('incorrect');
-    feedback.className = 'quiz-feedback show incorrect';
-    feedback.textContent = '不对。record 可以定义字段，也能被序列化。问题是它没有无参构造器和 setter，ORM 框架无法通过这些方法填充数据库查询结果。';
-  }
-}
-
-function checkAnswer3(el, isCorrect) {
-  var options = el.parentNode.querySelectorAll('.quiz-option');
-  var feedback = document.getElementById('quiz-feedback-3');
-  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
-  if (isCorrect) {
-    el.classList.add('correct');
-    feedback.className = 'quiz-feedback show correct';
-    feedback.textContent = '正确！selectList(null) 中 null 表示没有查询条件，等价于 SELECT * FROM users，返回全部记录。传入 QueryWrapper 可以添加 WHERE 条件，下一课会学。';
-  } else {
-    el.classList.add('incorrect');
-    feedback.className = 'quiz-feedback show incorrect';
-    feedback.textContent = '不对。null 不是指连接为空或结果为空，它表示查询条件为空 -- 即不带 WHERE 条件，查询全部数据。';
-  }
-}
-</script>
 
 </body>
 </html>

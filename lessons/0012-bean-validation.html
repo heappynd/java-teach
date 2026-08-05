@@ -270,40 +270,69 @@ Content-Type: application/json
 
 </div>
 
-<div class="quiz">
-  <h3>小测验</h3>
-  <p class="quiz-question">@Valid 注解应该放在哪里？</p>
-  <ul class="quiz-options">
-    <li class="quiz-option" onclick="checkAnswer(this, false)">放在 Service 实现类上面</li>
-    <li class="quiz-option" onclick="checkAnswer(this, true)">放在 Controller 方法参数前</li>
-    <li class="quiz-option" onclick="checkAnswer(this, false)">放在 Entity 类的注解里</li>
-    <li class="quiz-option" onclick="checkAnswer(this, false)">放在 pom.xml 的依赖中</li>
-  </ul>
-  <div class="quiz-feedback" id="quiz-feedback"></div>
-</div>
+<div class="challenge">
+  <div class="challenge-header">
+    <span class="challenge-badge">实战</span>
+    <h3>动手挑战：修改密码接口 + 参数校验</h3>
+  </div>
+  <p class="challenge-context">你已经学会了 Bean Validation 注解。现在创建一个修改密码的接口，练习 <code>@NotBlank</code>、<code>@Size</code> 校验。这个接口不需要真的改密码，重点是校验逻辑。</p>
 
-<div class="quiz">
-  <h3>小测验</h3>
-  <p class="quiz-question">@NotBlank 和 @NotNull 的核心区别是什么？</p>
-  <ul class="quiz-options">
-    <li class="quiz-option" onclick="checkAnswer2(this, false)">两者功能完全相同无区别</li>
-    <li class="quiz-option" onclick="checkAnswer2(this, true)">NotBlank 还拒绝空白字符串</li>
-    <li class="quiz-option" onclick="checkAnswer2(this, false)">NotNull 还校验数字范围</li>
-    <li class="quiz-option" onclick="checkAnswer2(this, false)">NotBlank 只能用于数字类型</li>
-  </ul>
-  <div class="quiz-feedback" id="quiz-feedback-2"></div>
-</div>
+  <div class="challenge-requirements">
+    <h4>需求</h4>
+    <ul>
+      <li>在 <code>dto</code> 包下创建 <code>PasswordChangeRequest</code> 类（Lombok <code>@Data</code>），包含：
+        <ul>
+          <li><code>oldPassword</code> - <code>@NotBlank(message = "原密码不能为空")</code></li>
+          <li><code>newPassword</code> - <code>@NotBlank(message = "新密码不能为空")</code> + <code>@Size(min = 6, max = 20, message = "密码长度需在6-20位之间")</code></li>
+        </ul>
+      </li>
+      <li>在 <code>UserController</code> 中新增 <code>POST /users/{id}/password</code> 接口</li>
+      <li>用 <code>@Valid @RequestBody PasswordChangeRequest req</code> 接收参数</li>
+      <li>用 <code>@PathVariable Long id</code> 接收用户 ID</li>
+      <li>返回 <code>Result.success()</code>（不需要真的改密码）</li>
+    </ul>
+  </div>
 
-<div class="quiz">
-  <h3>小测验</h3>
-  <p class="quiz-question">Bean Validation 校验失败时抛出什么异常？</p>
-  <ul class="quiz-options">
-    <li class="quiz-option" onclick="checkAnswer3(this, false)">NullPointerException 异常</li>
-    <li class="quiz-option" onclick="checkAnswer3(this, false)">IllegalArgumentException 异常</li>
-    <li class="quiz-option" onclick="checkAnswer3(this, true)">MethodArgumentNotValidException</li>
-    <li class="quiz-option" onclick="checkAnswer3(this, false)">ConstraintViolationException</li>
+  <div class="challenge-files">
+    <h4>需要创建/改动的文件</h4>
+    <ol>
+      <li><code>dto/PasswordChangeRequest.java</code> - 带校验注解的 DTO</li>
+      <li><code>controller/UserController.java</code> - 新增密码修改接口</li>
+    </ol>
+  </div>
+
+  <h4>验收清单（我会逐项检查）</h4>
+  <ul class="challenge-checklist">
+    <li>PasswordChangeRequest 在 <code>dto</code> 包中，有 Lombok <code>@Data</code></li>
+    <li>oldPassword 有 <code>@NotBlank</code> 注解</li>
+    <li>newPassword 有 <code>@NotBlank</code> 和 <code>@Size(min=6, max=20)</code> 两个注解</li>
+    <li>Controller 用 <code>@PostMapping("/{id}/password")</code></li>
+    <li>参数有 <code>@Valid</code> 注解（触发校验）</li>
+    <li>不传 newPassword 返回 400 + "新密码不能为空"</li>
+    <li>newPassword 只有 3 位返回 400 + "密码长度需在6-20位之间"</li>
+    <li>校验通过时返回 <code>{"code":200,"message":"success","data":null}</code></li>
+    <li>代码能编译通过</li>
   </ul>
-  <div class="quiz-feedback" id="quiz-feedback-3"></div>
+
+  <details class="challenge-hints">
+    <summary>卡住了？点开看提示（建议先自己想 5 分钟）</summary>
+    <details>
+      <summary>提示 1：DTO 类怎么写？</summary>
+      <p>和 User 实体一样，但不需要 <code>@TableName</code> -- 这不是数据库实体，只是请求参数容器。import：<code>import jakarta.validation.constraints.*;</code></p>
+    </details>
+    <details>
+      <summary>提示 2：@Valid 放哪？</summary>
+      <p>放在 Controller 方法参数前：<code>public Result&lt;?&gt; changePassword(@PathVariable Long id, @Valid @RequestBody PasswordChangeRequest req)</code>。</p>
+    </details>
+    <details>
+      <summary>提示 3：校验失败谁处理？</summary>
+      <p>校验失败抛 <code>MethodArgumentNotValidException</code>，GlobalExceptionHandler 已经能处理（第 12 课配好了），返回 400 + 字段错误信息。不需要额外改动。</p>
+    </details>
+  </details>
+
+  <div class="challenge-submit">
+    <p><strong>完成后告诉我「评审」或「完成了」</strong>，我会读取你的代码，对照验收清单逐项点评，并给出改进建议。</p>
+  </div>
 </div>
 
 <div class="callout callout-tip">
@@ -324,53 +353,6 @@ Content-Type: application/json
 <div class="footer">
   <p>有任何不清楚的地方？直接问我！我是你的 Java 后端老师，随时帮你解决疑问。</p>
 </div>
-
-<script>
-function checkAnswer(el, isCorrect) {
-  var options = el.parentNode.querySelectorAll('.quiz-option');
-  var feedback = document.getElementById('quiz-feedback');
-  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
-  if (isCorrect) {
-    el.classList.add('correct');
-    feedback.className = 'quiz-feedback show correct';
-    feedback.textContent = '正确！@Valid 放在 Controller 方法的 @RequestBody 参数前，告诉 Spring 在进入方法体之前自动校验这个对象。就像前端表单提交前调用 formRef.validate()。';
-  } else {
-    el.classList.add('incorrect');
-    feedback.className = 'quiz-feedback show incorrect';
-    feedback.textContent = '不对。注解加在 Entity 字段上（如 @NotBlank），但触发校验的 @Valid 必须放在 Controller 方法参数前。Service 和 pom.xml 都不是它的位置。';
-  }
-}
-
-function checkAnswer2(el, isCorrect) {
-  var options = el.parentNode.querySelectorAll('.quiz-option');
-  var feedback = document.getElementById('quiz-feedback-2');
-  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
-  if (isCorrect) {
-    el.classList.add('correct');
-    feedback.className = 'quiz-feedback show correct';
-    feedback.textContent = '正确！@NotBlank 最严格：null、空字符串 ""、纯空格 " " 都不通过。@NotNull 只拒绝 null，空字符串 "" 能过。字符串字段用 @NotBlank，数字字段用 @NotNull。';
-  } else {
-    el.classList.add('incorrect');
-    feedback.className = 'quiz-feedback show incorrect';
-    feedback.textContent = '不对。两者功能不同：@NotNull 只拒绝 null，@NotBlank 还拒绝空字符串和纯空格。这是最常见的坑。';
-  }
-}
-
-function checkAnswer3(el, isCorrect) {
-  var options = el.parentNode.querySelectorAll('.quiz-option');
-  var feedback = document.getElementById('quiz-feedback-3');
-  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
-  if (isCorrect) {
-    el.classList.add('correct');
-    feedback.className = 'quiz-feedback show correct';
-    feedback.textContent = '正确！@Valid 校验失败时 Spring 抛出 MethodArgumentNotValidException。在 GlobalExceptionHandler 中用 @ExceptionHandler 捕获它，把校验错误提取成 JSON 返回给前端。';
-  } else {
-    el.classList.add('incorrect');
-    feedback.className = 'quiz-feedback show incorrect';
-    feedback.textContent = '不对。NullPointerException 和 IllegalArgumentException 是业务代码抛的。ConstraintViolationException 是在 Service 层校验时抛的。Controller 层 @Valid 校验失败抛的是 MethodArgumentNotValidException。';
-  }
-}
-</script>
 
 </body>
 </html>

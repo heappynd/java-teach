@@ -633,40 +633,66 @@ public class UserController {
   <p>唯一的 JDK 8 差异：分页插件依赖改为 <code>mybatis-plus-jsqlparser-4.9</code>。</p>
 </div>
 
-<div class="quiz">
-  <h3>小测验</h3>
-  <p class="quiz-question">LambdaQueryWrapper 相比 QueryWrapper 的主要优势是什么？</p>
-  <ul class="quiz-options">
-    <li class="quiz-option" onclick="checkAnswer(this, false)">运行速度更快且内存占用更少</li>
-    <li class="quiz-option" onclick="checkAnswer(this, true)">字段名编译时检查重构更安全</li>
-    <li class="quiz-option" onclick="checkAnswer(this, false)">支持更多种 SQL 操作和子查询</li>
-    <li class="quiz-option" onclick="checkAnswer(this, false)">不需要导入任何额外依赖包</li>
-  </ul>
-  <div class="quiz-feedback" id="quiz-feedback"></div>
-</div>
+<div class="challenge">
+  <div class="challenge-header">
+    <span class="challenge-badge">实战</span>
+    <h3>动手挑战：按年龄范围查询用户</h3>
+  </div>
+  <p class="challenge-context">你已经学会了 LambdaQueryWrapper 的条件构造。现在给 UserController 加一个按年龄范围筛选的接口，练习 <code>ge</code>、<code>le</code> 和 <code>orderByAsc</code>。</p>
 
-<div class="quiz">
-  <h3>小测验</h3>
-  <p class="quiz-question">new Page&lt;User&gt;(2, 5) 表示什么含义？</p>
-  <ul class="quiz-options">
-    <li class="quiz-option" onclick="checkAnswer2(this, false)">查询第 2 条到第 5 条记录</li>
-    <li class="quiz-option" onclick="checkAnswer2(this, false)">每页 2 条记录共分 5 页</li>
-    <li class="quiz-option" onclick="checkAnswer2(this, true)">查询第 2 页每页 5 条记录</li>
-    <li class="quiz-option" onclick="checkAnswer2(this, false)">总共 2 页每页显示 5 条</li>
-  </ul>
-  <div class="quiz-feedback" id="quiz-feedback-2"></div>
-</div>
+  <div class="challenge-requirements">
+    <h4>需求</h4>
+    <ul>
+      <li>在 <code>UserController</code> 中新增 <code>GET /users/by-age</code> 接口</li>
+      <li>查询参数：<code>min</code>（最小年龄）、<code>max</code>（最大年龄），均为可选</li>
+      <li>用 <code>LambdaQueryWrapper</code> 构建条件：<code>age &gt;= min</code> 且 <code>age &lt;= max</code></li>
+      <li>按年龄升序排列（<code>orderByAsc</code>）</li>
+      <li>返回 <code>List&lt;User&gt;</code>（不分页，用 IService 的 <code>list</code> 方法）</li>
+    </ul>
+    <p>先在 DBeaver 中给部分用户设置 age 值，方便测试：</p>
+    <pre><code>UPDATE users SET age = 25 WHERE name = 'Vue';
+UPDATE users SET age = 30 WHERE name = 'React';
+UPDATE users SET age = 22 WHERE name = 'Angular';</code></pre>
+  </div>
 
-<div class="quiz">
-  <h3>小测验</h3>
-  <p class="quiz-question">updateById(user) 如何处理 user 对象中的 null 字段？</p>
-  <ul class="quiz-options">
-    <li class="quiz-option" onclick="checkAnswer3(this, false)">将数据库对应字段更新为 NULL</li>
-    <li class="quiz-option" onclick="checkAnswer3(this, true)">跳过不更新该字段的值</li>
-    <li class="quiz-option" onclick="checkAnswer3(this, false)">抛出空指针异常并报错</li>
-    <li class="quiz-option" onclick="checkAnswer3(this, false)">自动填充默认值后再更新</li>
+  <div class="challenge-files">
+    <h4>需要改动的文件</h4>
+    <ol>
+      <li><code>controller/UserController.java</code> - 新增一个方法</li>
+    </ol>
+  </div>
+
+  <h4>验收清单（我会逐项检查）</h4>
+  <ul class="challenge-checklist">
+    <li>用 <code>@GetMapping("/by-age")</code> 定义路由</li>
+    <li>min 和 max 参数用 <code>@RequestParam(required = false)</code></li>
+    <li>用 <code>LambdaQueryWrapper&lt;User&gt;</code> 构建条件</li>
+    <li>用 <code>.ge()</code> 和 <code>.le()</code> 做范围筛选（带条件判断）</li>
+    <li>用 <code>.orderByAsc(User::getAge)</code> 排序</li>
+    <li>返回 <code>List&lt;User&gt;</code>（不是 Page）</li>
+    <li>访问 <code>/users/by-age?min=20&amp;max=30</code> 返回正确结果</li>
+    <li>代码能编译通过</li>
   </ul>
-  <div class="quiz-feedback" id="quiz-feedback-3"></div>
+
+  <details class="challenge-hints">
+    <summary>卡住了？点开看提示（建议先自己想 5 分钟）</summary>
+    <details>
+      <summary>提示 1：条件筛选怎么写？</summary>
+      <p>和第 7 课的 name 筛选一样，用 boolean 条件参数：<code>wrapper.ge(min != null, User::getAge, min).le(max != null, User::getAge, max)</code></p>
+    </details>
+    <details>
+      <summary>提示 2：用 selectList 还是 selectPage？</summary>
+      <p>本练习不分页。当前 Controller 注入的是 <code>UserService</code>，可以用 <code>userService.list(wrapper)</code>（IService 方法，对应 selectList）。</p>
+    </details>
+    <details>
+      <summary>提示 3：注意路由冲突</summary>
+      <p><code>@GetMapping("/by-age")</code> 和 <code>@GetMapping("/{id}")</code> 不会冲突 -- Spring 优先匹配精确路径。</p>
+    </details>
+  </details>
+
+  <div class="challenge-submit">
+    <p><strong>完成后告诉我「评审」或「完成了」</strong>，我会读取你的代码，对照验收清单逐项点评，并给出改进建议。</p>
+  </div>
 </div>
 
 <div class="callout callout-tip">
@@ -687,53 +713,6 @@ public class UserController {
 <div class="footer">
   <p>有任何不清楚的地方？直接问我！我是你的 Java 后端老师，随时帮你解决疑问。</p>
 </div>
-
-<script>
-function checkAnswer(el, isCorrect) {
-  var options = el.parentNode.querySelectorAll('.quiz-option');
-  var feedback = document.getElementById('quiz-feedback');
-  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
-  if (isCorrect) {
-    el.classList.add('correct');
-    feedback.className = 'quiz-feedback show correct';
-    feedback.textContent = '正确！LambdaQueryWrapper 使用方法引用（User::getName）引用字段，编译时就能检查字段名是否正确。如果后续重命名字段，IDE 会提示修改，不会像字符串那样到运行时才报错。';
-  } else {
-    el.classList.add('incorrect');
-    feedback.className = 'quiz-feedback show incorrect';
-    feedback.textContent = '不对。LambdaQueryWrapper 和 QueryWrapper 支持的 SQL 操作完全相同，性能也没有差异。核心区别是字段引用方式：Lambda 用方法引用（类型安全），QueryWrapper 用字符串（容易写错）。';
-  }
-}
-
-function checkAnswer2(el, isCorrect) {
-  var options = el.parentNode.querySelectorAll('.quiz-option');
-  var feedback = document.getElementById('quiz-feedback-2');
-  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
-  if (isCorrect) {
-    el.classList.add('correct');
-    feedback.className = 'quiz-feedback show correct';
-    feedback.textContent = '正确！Page 构造器第一个参数是页码（current），第二个是每页条数（size）。new Page<>(2, 5) 表示第 2 页、每页 5 条。生成的 SQL 是 LIMIT 5 OFFSET 5（跳过前 5 条，取接下来 5 条）。';
-  } else {
-    el.classList.add('incorrect');
-    feedback.className = 'quiz-feedback show incorrect';
-    feedback.textContent = '不对。Page 的两个参数分别是当前页码和每页条数，不是记录范围或页数。new Page<>(2, 5) = 第 2 页，每页 5 条。';
-  }
-}
-
-function checkAnswer3(el, isCorrect) {
-  var options = el.parentNode.querySelectorAll('.quiz-option');
-  var feedback = document.getElementById('quiz-feedback-3');
-  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
-  if (isCorrect) {
-    el.classList.add('correct');
-    feedback.className = 'quiz-feedback show correct';
-    feedback.textContent = '正确！updateById 默认只更新非 null 字段，这叫"选择性更新"。如果请求体只有 {"name":"NewName"}，email 不会被覆盖为 null。这个行为在做 PATCH 式部分更新时非常有用。';
-  } else {
-    el.classList.add('incorrect');
-    feedback.className = 'quiz-feedback show incorrect';
-    feedback.textContent = '不对。updateById 不会把 null 字段写入数据库，也不会报错。它自动跳过 null 字段，只更新有值的字段 -- 这是默认的安全行为。';
-  }
-}
-</script>
 
 </body>
 </html>

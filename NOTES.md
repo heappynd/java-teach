@@ -62,6 +62,31 @@
 - 第 12 课：Bean Validation (JSR 380) 支持 JDK 8；Spring Boot 2.x 下 import 从 jakarta.validation 换成 javax.validation
 - 第 13 课：Result 泛型类 JDK 5+ 支持，Lombok @Data 兼容 JDK 8，Stream API 是 JDK 8 原生特性
 
+## 练习格式变更记录
+
+用户反馈：之前的课程偏理论，选择题不够实战。已将全部 13 节课的选择题替换为「动手挑战」实战练习。
+
+格式规范（所有课程统一）：
+- 紫色 `.challenge` 组件（CSS 在 `assets/style.css`）
+- 每个挑战包含：需求说明、需改动文件、验收清单（checkbox 列表）、渐进提示（`<details>` 折叠）、提交评审指引
+- 练习形式：在 demo 项目中写代码 / 改配置 / 运行命令
+- 评审流程：用户完成后说「评审」，AI 读取 demo 项目代码对照验收清单逐项点评
+
+各课练习内容：
+1. 第 1 课：命令行写 Hello.java 编译运行
+2. 第 2 课：mvn -version / clean compile / dependency:tree
+3. 第 3 课：修改 application.yaml 端口为 9090 并运行
+4. 第 4 课：创建 MathController（add/multiply/sum 接口）
+5. 第 5 课：创建 WeatherController + Weather DTO（@PathVariable）
+6. 第 6 课：创建 Product 实体 + Mapper + GET /products
+7. 第 7 课：UserController 加 GET /users/by-age（LambdaQueryWrapper ge/le）
+8. 第 8 课：创建 CorsConfig（多源 CORS 配置）
+9. 第 9 课：UserService 加 updateUser 方法（含存在性校验）
+10. 第 10 课：创建 dto 包 + UserSummary DTO
+11. 第 11 课：自定义 UserNotFoundException + 异常处理器
+12. 第 12 课：PasswordChangeRequest DTO + @Valid 校验
+13. 第 13 课：批量删除用户接口（Result 格式综合练习）
+
 ## MyBatis Plus 版本差异备忘
 
 MyBatis Plus 3.5.17（Spring Boot 4 starter）中部分类的包路径发生了变化：

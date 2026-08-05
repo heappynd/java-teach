@@ -279,40 +279,60 @@ Content-Type: application/json
   </tr>
 </table>
 
-<div class="quiz">
-  <h3>小测验</h3>
-  <p class="quiz-question">@GetMapping 和 @PostMapping 的区别是什么？</p>
-  <ul class="quiz-options">
-    <li class="quiz-option" onclick="checkAnswer(this, false)">功能完全相同只是名字不同</li>
-    <li class="quiz-option" onclick="checkAnswer(this, true)">分别处理 GET 和 POST 请求方式</li>
-    <li class="quiz-option" onclick="checkAnswer(this, false)">GetMapping 比 PostMapping 更快</li>
-    <li class="quiz-option" onclick="checkAnswer(this, false)">PostMapping 只能用于删除操作</li>
-  </ul>
-  <div class="quiz-feedback" id="quiz-feedback"></div>
-</div>
+<div class="challenge">
+  <div class="challenge-header">
+    <span class="challenge-badge">实战</span>
+    <h3>动手挑战：创建计算器 API</h3>
+  </div>
+  <p class="challenge-context">你已经学会了 @GetMapping、@PostMapping、@RequestParam 和 @RequestBody。现在独立创建一个全新的 Controller，不参考课程代码，验证你真的掌握了。</p>
 
-<div class="quiz">
-  <h3>小测验</h3>
-  <p class="quiz-question">前端发送 POST 请求带 JSON body，后端用什么接收？</p>
-  <ul class="quiz-options">
-    <li class="quiz-option" onclick="checkAnswer2(this, false)">用 @RequestParam 接收</li>
-    <li class="quiz-option" onclick="checkAnswer2(this, true)">用 @RequestBody 注解接收</li>
-    <li class="quiz-option" onclick="checkAnswer2(this, false)">用 @PathVariable 接收</li>
-    <li class="quiz-option" onclick="checkAnswer2(this, false)">用 @GetMapping 接收</li>
-  </ul>
-  <div class="quiz-feedback" id="quiz-feedback-2"></div>
-</div>
+  <div class="challenge-requirements">
+    <h4>需求</h4>
+    <ul>
+      <li>在 <code>controller</code> 包下新建 <code>MathController.java</code></li>
+      <li><code>GET /calc/add?a=1&amp;b=2</code> -> 返回 <code>{"result": 3}</code></li>
+      <li><code>GET /calc/multiply?a=3&amp;b=4</code> -> 返回 <code>{"result": 12}</code></li>
+      <li><code>POST /calc/sum</code>，请求体 <code>[1, 2, 3]</code> -> 返回 <code>{"result": 6}</code></li>
+    </ul>
+  </div>
 
-<div class="quiz">
-  <h3>小测验</h3>
-  <p class="quiz-question">Spring Boot 方法返回 Map 时，响应是什么格式？</p>
-  <ul class="quiz-options">
-    <li class="quiz-option" onclick="checkAnswer3(this, false)">返回纯文本字符串</li>
-    <li class="quiz-option" onclick="checkAnswer3(this, true)">自动转换为 JSON 对象</li>
-    <li class="quiz-option" onclick="checkAnswer3(this, false)">返回 XML 格式数据</li>
-    <li class="quiz-option" onclick="checkAnswer3(this, false)">需要手动转格式才行</li>
+  <div class="challenge-files">
+    <h4>需要创建的文件</h4>
+    <ol>
+      <li><code>controller/MathController.java</code> - 一个全新的控制器</li>
+    </ol>
+  </div>
+
+  <h4>验收清单（我会逐项检查）</h4>
+  <ul class="challenge-checklist">
+    <li>类上有 <code>@RestController</code> 注解</li>
+    <li>add 和 multiply 用 <code>@GetMapping</code> + <code>@RequestParam</code> 接收参数</li>
+    <li>参数类型用 <code>int</code> 或 <code>double</code>（不是 String）</li>
+    <li>sum 用 <code>@PostMapping</code> + <code>@RequestBody List&lt;Integer&gt;</code> 接收数组</li>
+    <li>返回类型是 <code>Map&lt;String, Integer&gt;</code> 或 <code>Map&lt;String, Object&gt;</code></li>
+    <li>三个接口都能正常访问并返回正确结果</li>
+    <li>代码能编译通过</li>
   </ul>
-  <div class="quiz-feedback" id="quiz-feedback-3"></div>
+
+  <details class="challenge-hints">
+    <summary>卡住了？点开看提示（建议先自己想 5 分钟）</summary>
+    <details>
+      <summary>提示 1：参数类型用什么？</summary>
+      <p>用 <code>int</code> 或 <code>double</code>。Spring 自动把 URL 中的字符串 "1" 转成 int。</p>
+    </details>
+    <details>
+      <summary>提示 2：POST 接收 JSON 数组怎么写？</summary>
+      <p><code>@RequestBody List&lt;Integer&gt; numbers</code>。Spring 自动把 <code>[1,2,3]</code> 反序列化成 List。求和用 <code>numbers.stream().mapToInt(Integer::intValue).sum()</code> 或普通 for 循环。</p>
+    </details>
+    <details>
+      <summary>提示 3：返回 Map 怎么写？</summary>
+      <p><code>Map.of("result", 3)</code>（JDK 9+）或 <code>HashMap</code> + <code>put</code>（JDK 8）。</p>
+    </details>
+  </details>
+
+  <div class="challenge-submit">
+    <p><strong>完成后告诉我「评审」或「完成了」</strong>，我会读取你的 MathController 代码，对照验收清单逐项点评，并给出改进建议。</p>
+  </div>
 </div>
 
 <div class="callout callout-tip">
@@ -332,53 +352,6 @@ Content-Type: application/json
 <div class="footer">
   <p>有任何不清楚的地方？直接问我！我是你的 Java 后端老师，随时帮你解决疑问。</p>
 </div>
-
-<script>
-function checkAnswer(el, isCorrect) {
-  var options = el.parentNode.querySelectorAll('.quiz-option');
-  var feedback = document.getElementById('quiz-feedback');
-  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
-  if (isCorrect) {
-    el.classList.add('correct');
-    feedback.className = 'quiz-feedback show correct';
-    feedback.textContent = '正确！@GetMapping 处理 GET 请求（获取数据），@PostMapping 处理 POST 请求（提交数据），就像 Express 的 app.get 和 app.post。';
-  } else {
-    el.classList.add('incorrect');
-    feedback.className = 'quiz-feedback show incorrect';
-    feedback.textContent = '不对。它们对应 HTTP 的 GET 和 POST 方法，功能完全不同。GET 用于获取数据，POST 用于提交数据。';
-  }
-}
-
-function checkAnswer2(el, isCorrect) {
-  var options = el.parentNode.querySelectorAll('.quiz-option');
-  var feedback = document.getElementById('quiz-feedback-2');
-  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
-  if (isCorrect) {
-    el.classList.add('correct');
-    feedback.className = 'quiz-feedback show correct';
-    feedback.textContent = '正确！@RequestBody 用于接收请求体中的 JSON 数据，相当于 Express 的 req.body。@RequestParam 是查询参数，@PathVariable 是路径参数。';
-  } else {
-    el.classList.add('incorrect');
-    feedback.className = 'quiz-feedback show incorrect';
-    feedback.textContent = '不对。@RequestParam 接收的是 URL 查询参数（?key=value），接收请求体 JSON 要用 @RequestBody。';
-  }
-}
-
-function checkAnswer3(el, isCorrect) {
-  var options = el.parentNode.querySelectorAll('.quiz-option');
-  var feedback = document.getElementById('quiz-feedback-3');
-  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
-  if (isCorrect) {
-    el.classList.add('correct');
-    feedback.className = 'quiz-feedback show correct';
-    feedback.textContent = '正确！@RestController 会自动将返回的 Map 转为 JSON 对象，不需要手动转换，就像 Express 的 res.json()。';
-  } else {
-    el.classList.add('incorrect');
-    feedback.className = 'quiz-feedback show incorrect';
-    feedback.textContent = '不对。@RestController 标记的类，返回值会自动序列化为 JSON，不需要手动转换格式。';
-  }
-}
-</script>
 
 </body>
 </html>

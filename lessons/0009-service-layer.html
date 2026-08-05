@@ -408,40 +408,70 @@ Content-Type: application/json
   <p>本课的 Service 文件放在 <code>com.yourname.demo</code> 下（和现有文件保持一致）。但类多了应该按层建子包：<code>controller/</code>、<code>service/</code>、<code>mapper/</code>、<code>entity/</code>、<code>config/</code> -- 对应你前端的 <code>src/components/</code>、<code>src/stores/</code>、<code>src/api/</code>。详见 <a href="0010-java-packages-and-structure.html">第 10 课：Java 包与项目结构</a>。</p>
 </div>
 
-<div class="quiz">
-  <h3>小测验</h3>
-  <p class="quiz-question">"新增用户前检查邮箱是否重复"这类业务逻辑，应该放在哪一层？</p>
-  <ul class="quiz-options">
-    <li class="quiz-option" onclick="checkAnswer(this, false)">Controller 层 -- 它最先收到请求</li>
-    <li class="quiz-option" onclick="checkAnswer(this, true)">Service 层 -- 业务规则的归属地</li>
-    <li class="quiz-option" onclick="checkAnswer(this, false)">Mapper 层 -- 离数据库最近查重最快</li>
-    <li class="quiz-option" onclick="checkAnswer(this, false)">Entity 类里 -- 数据自己的规则自己管</li>
-  </ul>
-  <div class="quiz-feedback" id="quiz-feedback"></div>
-</div>
+<div class="challenge">
+  <div class="challenge-header">
+    <span class="challenge-badge">实战</span>
+    <h3>动手挑战：给 Service 添加更新用户方法</h3>
+  </div>
+  <p class="challenge-context">当前 UserController 的 PUT 方法直接调用 <code>userService.updateById(user)</code>，没有检查用户是否存在。现在把更新逻辑搬到 Service 层，加上业务校验。</p>
 
-<div class="quiz">
-  <h3>小测验</h3>
-  <p class="quiz-question">@Service 注解的作用是什么？</p>
-  <ul class="quiz-options">
-    <li class="quiz-option" onclick="checkAnswer2(this, false)">把这个类标记为对外提供 HTTP 接口</li>
-    <li class="quiz-option" onclick="checkAnswer2(this, true)">让 Spring 扫描并为它创建实例放进容器，供其他类注入</li>
-    <li class="quiz-option" onclick="checkAnswer2(this, false)">自动为这个类生成全部业务方法的实现</li>
-    <li class="quiz-option" onclick="checkAnswer2(this, false)">把这个类注册为数据库表对应的实体</li>
-  </ul>
-  <div class="quiz-feedback" id="quiz-feedback-2"></div>
-</div>
+  <div class="challenge-requirements">
+    <h4>需求</h4>
+    <ul>
+      <li>在 <code>UserService</code> 接口中声明 <code>User updateUser(Long id, User user)</code> 方法</li>
+      <li>在 <code>UserServiceImpl</code> 中实现：
+        <ul>
+          <li>先 <code>getById(id)</code> 检查用户是否存在</li>
+          <li>不存在则抛 <code>IllegalArgumentException("用户不存在: " + id)</code></li>
+          <li>把 id 设到 user 对象上，调用 <code>updateById(user)</code></li>
+          <li>返回更新后的用户 <code>getById(id)</code></li>
+        </ul>
+      </li>
+      <li>在 <code>UserController</code> 的 PUT 方法中改为调用 <code>userService.updateUser(id, user)</code></li>
+    </ul>
+  </div>
 
-<div class="quiz">
-  <h3>小测验</h3>
-  <p class="quiz-question">UserServiceImpl 继承 ServiceImpl&lt;UserMapper, User&gt; 之后，获得了什么？</p>
-  <ul class="quiz-options">
-    <li class="quiz-option" onclick="checkAnswer3(this, false)">只是代码风格约定，没有实际功能</li>
-    <li class="quiz-option" onclick="checkAnswer3(this, false)">自动生成了 Controller 层的 HTTP 接口</li>
-    <li class="quiz-option" onclick="checkAnswer3(this, true)">IService 自带的全套 CRUD 方法，内部自动调用 UserMapper</li>
-    <li class="quiz-option" onclick="checkAnswer3(this, false)">数据库连接池和事务管理能力</li>
+  <div class="challenge-files">
+    <h4>需要改动的文件</h4>
+    <ol>
+      <li><code>service/UserService.java</code> - 添加方法声明</li>
+      <li><code>service/UserServiceImpl.java</code> - 实现方法</li>
+      <li><code>controller/UserController.java</code> - PUT 方法改用 Service</li>
+    </ol>
+  </div>
+
+  <h4>验收清单（我会逐项检查）</h4>
+  <ul class="challenge-checklist">
+    <li>UserService 接口声明了 <code>updateUser(Long id, User user)</code></li>
+    <li>UserServiceImpl 实现了该方法，带 <code>@Override</code></li>
+    <li>实现中先 getById 检查存在性</li>
+    <li>不存在时抛 <code>IllegalArgumentException</code>，消息含 id</li>
+    <li>调用了 <code>user.setId(id)</code> 再 <code>updateById</code></li>
+    <li>返回更新后的用户对象</li>
+    <li>Controller 的 PUT 方法改为调用 <code>userService.updateUser</code></li>
+    <li>更新不存在的用户 ID 返回 400 错误</li>
+    <li>代码能编译通过</li>
   </ul>
-  <div class="quiz-feedback" id="quiz-feedback-3"></div>
+
+  <details class="challenge-hints">
+    <summary>卡住了？点开看提示（建议先自己想 5 分钟）</summary>
+    <details>
+      <summary>提示 1：怎么检查用户是否存在？</summary>
+      <p><code>User existing = getById(id); if (existing == null) { throw ... }</code>。<code>getById</code> 是 IService 自带方法。</p>
+    </details>
+    <details>
+      <summary>提示 2：Controller 怎么改？</summary>
+      <p>把 <code>user.setId(id); userService.updateById(user); return userService.getById(id);</code> 三行替换为 <code>return userService.updateUser(id, user);</code> 一行。</p>
+    </details>
+    <details>
+      <summary>提示 3：异常会被谁处理？</summary>
+      <p><code>IllegalArgumentException</code> 会被<a href="0011-global-exception-handling.html">第 11 课</a>的 <code>GlobalExceptionHandler</code> 自动捕获，返回 <code>{"code":400,"message":"用户不存在: xxx"}</code>。不需要额外处理。</p>
+    </details>
+  </details>
+
+  <div class="challenge-submit">
+    <p><strong>完成后告诉我「评审」或「完成了」</strong>，我会读取你的代码，对照验收清单逐项点评，并给出改进建议。</p>
+  </div>
 </div>
 
 <h2>推荐阅读</h2>
@@ -458,53 +488,6 @@ Content-Type: application/json
 <div class="footer">
   <p>有任何不清楚的地方？直接问我！我是你的 Java 后端老师，随时帮你解决疑问。</p>
 </div>
-
-<script>
-function checkAnswer(el, isCorrect) {
-  var options = el.parentNode.querySelectorAll('.quiz-option');
-  var feedback = document.getElementById('quiz-feedback');
-  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
-  if (isCorrect) {
-    el.classList.add('correct');
-    feedback.className = 'quiz-feedback show correct';
-    feedback.textContent = '正确！业务规则放 Service 层：可以被多个 Controller / 接口复用，不依赖 HTTP 所以容易测试，Controller 保持清爽只负责收发。就像你把业务逻辑放 Pinia store 而不是组件事件里。';
-  } else {
-    el.classList.add('incorrect');
-    feedback.className = 'quiz-feedback show incorrect';
-    feedback.textContent = '不对。Controller 只管 HTTP 交互，Mapper 只做数据访问，Entity 是数据载体。业务规则放 Service 层才能被复用和测试 -- 想想你的 Pinia store actions。';
-  }
-}
-
-function checkAnswer2(el, isCorrect) {
-  var options = el.parentNode.querySelectorAll('.quiz-option');
-  var feedback = document.getElementById('quiz-feedback-2');
-  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
-  if (isCorrect) {
-    el.classList.add('correct');
-    feedback.className = 'quiz-feedback show correct';
-    feedback.textContent = '正确！@Service 让 Spring 启动时扫描这个类，创建一个实例放进容器（默认单例），之后 Controller 通过构造器注入就能拿到它。类比 Vue 的 app.provide() 注册 + inject() 取用。@Service 不会生成任何方法实现，实现靠继承 ServiceImpl 获得。';
-  } else {
-    el.classList.add('incorrect');
-    feedback.className = 'quiz-feedback show incorrect';
-    feedback.textContent = '不对。提供 HTTP 接口是 @RestController 的职责；@Service 也不会自动生成方法实现。它的唯一作用是让 Spring 把这个类的实例注册进容器，供依赖注入使用。';
-  }
-}
-
-function checkAnswer3(el, isCorrect) {
-  var options = el.parentNode.querySelectorAll('.quiz-option');
-  var feedback = document.getElementById('quiz-feedback-3');
-  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
-  if (isCorrect) {
-    el.classList.add('correct');
-    feedback.className = 'quiz-feedback show correct';
-    feedback.textContent = '正确！ServiceImpl<UserMapper, User> 帮你实现了 IService 的全部方法（save/getById/page/count 等），内部自动调用泛型指定的 UserMapper。你只需写自定义业务方法，通用 CRUD 全部白嫖 -- 和 UserMapper extends BaseMapper 是同一个套路。';
-  } else {
-    el.classList.add('incorrect');
-    feedback.className = 'quiz-feedback show incorrect';
-    feedback.textContent = '不对。继承 ServiceImpl 获得的是 IService 自带的全套 CRUD 方法实现（save/getById/page 等），内部帮你调用 UserMapper。它不生成 HTTP 接口，也不管连接池 -- 那是 Spring Boot 自动配置的事。';
-  }
-}
-</script>
 
 </body>
 </html>

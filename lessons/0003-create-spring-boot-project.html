@@ -351,28 +351,49 @@ INFO  --- Started DemoApplication in 2.134 seconds</span>
 
 </div>
 
-<div class="quiz">
-  <h3>小测验</h3>
-  <p class="quiz-question">Spring Initializr 中的 "Dependencies" 相当于前端什么操作？</p>
-  <ul class="quiz-options">
-    <li class="quiz-option" onclick="checkAnswer(this, false)">相当于配置 ESLint 规则</li>
-    <li class="quiz-option" onclick="checkAnswer(this, true)">相当于选择要装哪些库</li>
-    <li class="quiz-option" onclick="checkAnswer(this, false)">相当于配置 Webpack 打包</li>
-    <li class="quiz-option" onclick="checkAnswer(this, false)">相当于设置 TypeScript 版本</li>
-  </ul>
-  <div class="quiz-feedback" id="quiz-feedback"></div>
-</div>
+<div class="challenge">
+  <div class="challenge-header">
+    <span class="challenge-badge">实战</span>
+    <h3>动手挑战：修改服务端口并运行</h3>
+  </div>
+  <p class="challenge-context">你的 Spring Boot demo 项目已经创建好了。现在修改一个配置，验证你理解了项目结构和配置文件的作用。</p>
 
-<div class="quiz">
-  <h3>小测验</h3>
-  <p class="quiz-question">访问 localhost:8080 出现错误页面是为什么？</p>
-  <ul class="quiz-options">
-    <li class="quiz-option" onclick="checkAnswer2(this, false)">因为 Spring Boot 启动失败了</li>
-    <li class="quiz-option" onclick="checkAnswer2(this, true)">因为还没有定义任何接口</li>
-    <li class="quiz-option" onclick="checkAnswer2(this, false)">因为端口 8080 被占用</li>
-    <li class="quiz-option" onclick="checkAnswer2(this, false)">因为 JDK 版本不兼容</li>
+  <div class="challenge-requirements">
+    <h4>需求</h4>
+    <ul>
+      <li>找到 <code>demo/src/main/resources/application.yaml</code></li>
+      <li>添加配置：把服务器端口从默认的 8080 改成 <code>9090</code></li>
+      <li>运行项目（IDE 运行或 <code>mvn spring-boot:run</code>）</li>
+      <li>浏览器访问 <code>http://localhost:9090/users</code>，确认能正常返回数据</li>
+    </ul>
+  </div>
+
+  <div class="challenge-files">
+    <h4>需要改动的文件</h4>
+    <ol>
+      <li><code>src/main/resources/application.yaml</code> - 添加端口配置</li>
+    </ol>
+  </div>
+
+  <h4>验收清单（我会逐项检查）</h4>
+  <ul class="challenge-checklist">
+    <li>配置文件中添加了 <code>server.port: 9090</code>（YAML 格式）</li>
+    <li>项目能正常启动，日志显示端口 9090</li>
+    <li><code>http://localhost:9090/users</code> 能正常返回 JSON 数据</li>
+    <li><code>http://localhost:8080/users</code> 无法访问（端口已改）</li>
   </ul>
-  <div class="quiz-feedback" id="quiz-feedback-2"></div>
+
+  <details class="challenge-hints">
+    <summary>卡住了？点开看提示</summary>
+    <details>
+      <summary>提示：YAML 格式怎么写？</summary>
+      <p>在 <code>application.yaml</code> 顶部添加：<br><code>server:<br>&nbsp;&nbsp;port: 9090</code><br>注意 YAML 用缩进表示层级，<code>port</code> 前面有两个空格。</p>
+    </details>
+  </details>
+
+  <div class="challenge-submit">
+    <p><strong>完成后告诉我「评审」或「完成了」</strong>，我会读取你的配置文件，并确认端口修改是否正确。</p>
+  </div>
 </div>
 
 <div class="callout callout-tip">
@@ -392,38 +413,6 @@ INFO  --- Started DemoApplication in 2.134 seconds</span>
 <div class="footer">
   <p>有任何不清楚的地方？直接问我！我是你的 Java 后端老师，随时帮你解决疑问。</p>
 </div>
-
-<script>
-function checkAnswer(el, isCorrect) {
-  var options = el.parentNode.querySelectorAll('.quiz-option');
-  var feedback = document.getElementById('quiz-feedback');
-  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
-  if (isCorrect) {
-    el.classList.add('correct');
-    feedback.className = 'quiz-feedback show correct';
-    feedback.textContent = '正确！Dependencies 就像 npm create vue 时选择是否要 Router、Pinia、Vitest 一样，选中的依赖会自动写入 pom.xml。';
-  } else {
-    el.classList.add('incorrect');
-    feedback.className = 'quiz-feedback show incorrect';
-    feedback.textContent = '不对。Dependencies 不是打包或 lint 配置，它选择的是项目要用到哪些库（如 Web、数据库等），相当于 npm 安装依赖包。';
-  }
-}
-
-function checkAnswer2(el, isCorrect) {
-  var options = el.parentNode.querySelectorAll('.quiz-option');
-  var feedback = document.getElementById('quiz-feedback-2');
-  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
-  if (isCorrect) {
-    el.classList.add('correct');
-    feedback.className = 'quiz-feedback show correct';
-    feedback.textContent = '正确！Spring Boot 已成功启动，但我们还没写任何 API 接口，所以访问根路径返回错误页面。下一课就会写第一个接口！';
-  } else {
-    el.classList.add('incorrect');
-    feedback.className = 'quiz-feedback show incorrect';
-    feedback.textContent = '不对。Spring Boot 已经成功启动了（看日志 "Started DemoApplication"）。错误页面是因为还没定义任何接口处理请求。';
-  }
-}
-</script>
 
 </body>
 </html>

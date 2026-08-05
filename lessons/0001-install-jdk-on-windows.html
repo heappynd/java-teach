@@ -147,28 +147,64 @@ OpenJDK Runtime Environment Temurin-17.0.x (build 17.0.x+x, mixed mode, sharing)
   </div>
 </div>
 
-<div class="quiz">
-  <h3>小测验</h3>
-  <p class="quiz-question">JDK 和 Node.js 在各自生态中扮演的角色有什么共同点？</p>
-  <ul class="quiz-options">
-    <li class="quiz-option" onclick="checkAnswer(this, false)">它们都是代码编辑器，用来写代码</li>
-    <li class="quiz-option" onclick="checkAnswer(this, true)">它们都提供运行时环境，让代码能被执行</li>
-    <li class="quiz-option" onclick="checkAnswer(this, false)">它们都是包管理器，用来安装依赖</li>
-    <li class="quiz-option" onclick="checkAnswer(this, false)">它们都是框架，提供 UI 组件库</li>
-  </ul>
-  <div class="quiz-feedback" id="quiz-feedback"></div>
-</div>
+<div class="challenge">
+  <div class="challenge-header">
+    <span class="challenge-badge">实战</span>
+    <h3>动手挑战：从命令行编译运行 Java 程序</h3>
+  </div>
+  <p class="challenge-context">JDK 装好了，光说不练假把式。现在不用 IDE，纯命令行写一个 Java 程序，验证你的 JDK 真的能工作。</p>
 
-<div class="quiz">
-  <h3>小测验</h3>
-  <p class="quiz-question">安装 JDK 后，为什么要设置 JAVA_HOME 环境变量？</p>
-  <ul class="quiz-options">
-    <li class="quiz-option" onclick="checkAnswer2(this, false)">不设置 Java 代码无法编译</li>
-    <li class="quiz-option" onclick="checkAnswer2(this, true)">其他工具如 Maven 需要它定位 JDK</li>
-    <li class="quiz-option" onclick="checkAnswer2(this, false)">它是 Java 代码的运行目录</li>
-    <li class="quiz-option" onclick="checkAnswer2(this, false)">它存储 Java 项目的源代码</li>
+  <div class="challenge-requirements">
+    <h4>需求</h4>
+    <ul>
+      <li>在 <code>C:\Users\He\coding\java-teach\</code> 下新建文件 <code>Hello.java</code></li>
+      <li>写一个 <code>main</code> 方法，做两件事：
+        <ul>
+          <li>打印 <code>Hello, Java!</code></li>
+          <li>打印当前 Java 版本：<code>System.getProperty("java.version")</code></li>
+        </ul>
+      </li>
+      <li>在终端中用 <code>javac Hello.java</code> 编译</li>
+      <li>用 <code>java Hello</code> 运行</li>
+    </ul>
+  </div>
+
+  <div class="challenge-files">
+    <h4>需要创建的文件</h4>
+    <ol>
+      <li><code>Hello.java</code> - 放在 java-teach 根目录</li>
+    </ol>
+  </div>
+
+  <h4>验收清单（我会逐项检查）</h4>
+  <ul class="challenge-checklist">
+    <li>文件名是 <code>Hello.java</code>，类名也是 <code>Hello</code></li>
+    <li>有 <code>public static void main(String[] args)</code> 方法</li>
+    <li>用 <code>System.out.println</code> 打印了 "Hello, Java!"</li>
+    <li>用 <code>System.getProperty("java.version")</code> 打印了 Java 版本</li>
+    <li>用 <code>javac</code> 编译成功（生成了 Hello.class）</li>
+    <li>用 <code>java</code> 运行成功（输出了两行内容）</li>
   </ul>
-  <div class="quiz-feedback" id="quiz-feedback-2"></div>
+
+  <details class="challenge-hints">
+    <summary>卡住了？点开看提示（建议先自己想 5 分钟）</summary>
+    <details>
+      <summary>提示 1：Java 程序的基本结构</summary>
+      <p><code>public class Hello { public static void main(String[] args) { ... } }</code>。类名必须和文件名一致。</p>
+    </details>
+    <details>
+      <summary>提示 2：怎么编译运行？</summary>
+      <p>在文件所在目录打开终端：<code>javac Hello.java</code>（编译）-> <code>java Hello</code>（运行，不加后缀）</p>
+    </details>
+    <details>
+      <summary>提示 3：报 "javac 不是内部命令"怎么办？</summary>
+      <p>PATH 环境变量没配好。回到课程"配置环境变量"步骤，确保 JDK 的 <code>bin</code> 目录在 PATH 中，重新打开终端再试。</p>
+    </details>
+  </details>
+
+  <div class="challenge-submit">
+    <p><strong>完成后告诉我「评审」或「完成了」</strong>，我会读取你的 Hello.java 代码，并让你告诉我运行输出，对照验收清单点评。</p>
+  </div>
 </div>
 
 <div class="callout callout-tip">
@@ -188,38 +224,6 @@ OpenJDK Runtime Environment Temurin-17.0.x (build 17.0.x+x, mixed mode, sharing)
 <div class="footer">
   <p>有任何不清楚的地方？直接问我！我是你的 Java 后端老师，随时帮你解决疑问。</p>
 </div>
-
-<script>
-function checkAnswer(el, isCorrect) {
-  var options = el.parentNode.querySelectorAll('.quiz-option');
-  var feedback = document.getElementById('quiz-feedback');
-  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
-  if (isCorrect) {
-    el.classList.add('correct');
-    feedback.className = 'quiz-feedback show correct';
-    feedback.textContent = '正确！JDK 和 Node.js 都提供运行时环境，让代码能被编译和执行。JDK 之于 Java，正如 Node.js 之于 JavaScript。';
-  } else {
-    el.classList.add('incorrect');
-    feedback.className = 'quiz-feedback show incorrect';
-    feedback.textContent = '不对。JDK 不是编辑器、包管理器或框架，它提供的是编译器（javac）和运行时（JVM），让 Java 代码能被编译和运行，就像 Node.js 让 JS 代码能被执行。';
-  }
-}
-
-function checkAnswer2(el, isCorrect) {
-  var options = el.parentNode.querySelectorAll('.quiz-option');
-  var feedback = document.getElementById('quiz-feedback-2');
-  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
-  if (isCorrect) {
-    el.classList.add('correct');
-    feedback.className = 'quiz-feedback show correct';
-    feedback.textContent = '正确！JAVA_HOME 告诉 Maven 等构建工具 JDK 安装在哪里。Maven 需要 JDK 来编译代码，就像 Vite 需要 Node.js。';
-  } else {
-    el.classList.add('incorrect');
-    feedback.className = 'quiz-feedback show incorrect';
-    feedback.textContent = '不对。JAVA_HOME 不影响 Java 代码本身的编译，它是给 Maven 等外部工具用的，让它们能找到 JDK 的位置。';
-  }
-}
-</script>
 
 </body>
 </html>

@@ -376,40 +376,62 @@ public class UserController {
   <p>在代码中使用其他包的类时（比如在 Controller 里用 <code>User</code>），如果没 import，类名会标红。按 <code>Alt + Enter</code> -> <strong>Import Class</strong>，IDEA 自动添加正确的 import 语句。详见 <a href="../reference/idea-shortcuts.html">IDEA 快捷键速查表</a>。</p>
 </div>
 
-<div class="quiz">
-  <h3>小测验</h3>
-  <p class="quiz-question">Java 的 package 声明必须与什么保持一致？</p>
-  <ul class="quiz-options">
-    <li class="quiz-option" onclick="checkAnswer(this, false)">类名必须与文件名相同</li>
-    <li class="quiz-option" onclick="checkAnswer(this, true)">包名必须与目录路径一致</li>
-    <li class="quiz-option" onclick="checkAnswer(this, false)">包名必须与项目名相同</li>
-    <li class="quiz-option" onclick="checkAnswer(this, false)">类名必须与包名相同</li>
-  </ul>
-  <div class="quiz-feedback" id="quiz-feedback"></div>
-</div>
+<div class="challenge">
+  <div class="challenge-header">
+    <span class="challenge-badge">实战</span>
+    <h3>动手挑战：创建 dto 包和响应 DTO</h3>
+  </div>
+  <p class="challenge-context">实际开发中，返回给前端的 DTO 往往和数据库 Entity 不同 -- 比如不返回敏感字段。现在创建一个 <code>dto</code> 包，练习分包和 DTO 转换。</p>
 
-<div class="quiz">
-  <h3>小测验</h3>
-  <p class="quiz-question">@MapperScan("com.yourname.demo") 能扫描到子包中的 Mapper 吗？</p>
-  <ul class="quiz-options">
-    <li class="quiz-option" onclick="checkAnswer2(this, false)">不能只扫描当前包的类</li>
-    <li class="quiz-option" onclick="checkAnswer2(this, true)">能扫描当前包及所有子包</li>
-    <li class="quiz-option" onclick="checkAnswer2(this, false)">不能需要单独配置子包</li>
-    <li class="quiz-option" onclick="checkAnswer2(this, false)">不能子包需要额外注解</li>
-  </ul>
-  <div class="quiz-feedback" id="quiz-feedback-2"></div>
-</div>
+  <div class="challenge-requirements">
+    <h4>需求</h4>
+    <ul>
+      <li>在 <code>com.yourname.demo</code> 下新建 <code>dto</code> 子包</li>
+      <li>在 <code>dto</code> 包中创建 <code>UserSummary</code> 类（Lombok <code>@Data</code>），只含 <code>Long id</code> 和 <code>String name</code> 两个字段（不含 email）</li>
+      <li>在 <code>UserController</code> 中新增 <code>GET /users/{id}/summary</code> 接口</li>
+      <li>从数据库查出 User 后，转换为 UserSummary 返回（手动 set 或用 BeanUtils.copyProperties）</li>
+    </ul>
+  </div>
 
-<div class="quiz">
-  <h3>小测验</h3>
-  <p class="quiz-question">DemoApplication 启动类应该放在哪个位置？</p>
-  <ul class="quiz-options">
-    <li class="quiz-option" onclick="checkAnswer3(this, false)">放在 controller 子包里面</li>
-    <li class="quiz-option" onclick="checkAnswer3(this, false)">放在最深层的子包里面</li>
-    <li class="quiz-option" onclick="checkAnswer3(this, true)">放在根包扫描所有子包</li>
-    <li class="quiz-option" onclick="checkAnswer3(this, false)">放在项目 pom.xml 的同级</li>
+  <div class="challenge-files">
+    <h4>需要创建/改动的文件</h4>
+    <ol>
+      <li><code>dto/UserSummary.java</code> - 新建 DTO 类（在新包中）</li>
+      <li><code>controller/UserController.java</code> - 新增接口</li>
+    </ol>
+  </div>
+
+  <h4>验收清单（我会逐项检查）</h4>
+  <ul class="challenge-checklist">
+    <li><code>UserSummary.java</code> 的 package 声明是 <code>com.yourname.demo.dto</code></li>
+    <li>UserSummary 只有 id 和 name 字段（没有 email）</li>
+    <li>类上有 Lombok <code>@Data</code> 注解</li>
+    <li>Controller 有 <code>@GetMapping("/{id}/summary")</code></li>
+    <li>Controller 中 import 了 <code>UserSummary</code></li>
+    <li>从 User 转换为 UserSummary 的逻辑正确</li>
+    <li>访问 <code>/users/1/summary</code> 返回 <code>{"id":1,"name":"Vue"}</code>（不含 email）</li>
+    <li>代码能编译通过</li>
   </ul>
-  <div class="quiz-feedback" id="quiz-feedback-3"></div>
+
+  <details class="challenge-hints">
+    <summary>卡住了？点开看提示（建议先自己想 5 分钟）</summary>
+    <details>
+      <summary>提示 1：怎么创建新包？</summary>
+      <p>右键 <code>com.yourname.demo</code> -> New -> Package -> 输入 <code>dto</code>。然后右键 <code>dto</code> 包 -> New -> Java Class。</p>
+    </details>
+    <details>
+      <summary>提示 2：怎么转换 User -> UserSummary？</summary>
+      <p>最简单的方式：<code>UserSummary s = new UserSummary(); s.setId(user.getId()); s.setName(user.getName());</code>。或用 <code>BeanUtils.copyProperties(user, summary)</code> 自动复制同名字段。</p>
+    </details>
+    <details>
+      <summary>提示 3：Controller 怎么写？</summary>
+      <p>查到 User 后判空，然后转换：<code>User user = userService.getById(id); if (user == null) return null; UserSummary s = new UserSummary(); ...; return Result.success(s);</code></p>
+    </details>
+  </details>
+
+  <div class="challenge-submit">
+    <p><strong>完成后告诉我「评审」或「完成了」</strong>，我会读取你的代码，对照验收清单逐项点评，并给出改进建议。</p>
+  </div>
 </div>
 
 <div class="callout callout-tip">
@@ -429,53 +451,6 @@ public class UserController {
 <div class="footer">
   <p>有任何不清楚的地方？直接问我！我是你的 Java 后端老师，随时帮你解决疑问。</p>
 </div>
-
-<script>
-function checkAnswer(el, isCorrect) {
-  var options = el.parentNode.querySelectorAll('.quiz-option');
-  var feedback = document.getElementById('quiz-feedback');
-  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
-  if (isCorrect) {
-    el.classList.add('correct');
-    feedback.className = 'quiz-feedback show correct';
-    feedback.textContent = '正确！package 声明必须与文件所在的目录路径完全一致。com.yourname.demo.controller 对应 com/yourname/demo/controller/ 目录。这是 Java 编译器的硬性要求，不匹配会直接报错。';
-  } else {
-    el.classList.add('incorrect');
-    feedback.className = 'quiz-feedback show incorrect';
-    feedback.textContent = '不对。package 声明对应的是目录路径，不是类名或项目名。类名与文件名相同是另一个 Java 规则（public 类名必须与文件名一致），与 package 无关。';
-  }
-}
-
-function checkAnswer2(el, isCorrect) {
-  var options = el.parentNode.querySelectorAll('.quiz-option');
-  var feedback = document.getElementById('quiz-feedback-2');
-  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
-  if (isCorrect) {
-    el.classList.add('correct');
-    feedback.className = 'quiz-feedback show correct';
-    feedback.textContent = '正确！@MapperScan 扫描指定包及其所有子包，就像递归遍历目录。所以 @MapperScan("com.yourname.demo") 能找到 mapper 子包里的 UserMapper，不需要改路径。当然，写 @MapperScan("com.yourname.demo.mapper") 更精确，两者都行。';
-  } else {
-    el.classList.add('incorrect');
-    feedback.className = 'quiz-feedback show incorrect';
-    feedback.textContent = '不对。@MapperScan 是递归扫描的 -- 指定一个包，它的所有子包都会被扫描到。这和前端的 glob 匹配 ./src/**/*.vue 是同一个道理。';
-  }
-}
-
-function checkAnswer3(el, isCorrect) {
-  var options = el.parentNode.querySelectorAll('.quiz-option');
-  var feedback = document.getElementById('quiz-feedback-3');
-  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
-  if (isCorrect) {
-    el.classList.add('correct');
-    feedback.className = 'quiz-feedback show correct';
-    feedback.textContent = '正确！启动类放在根包 com.yourname.demo，@SpringBootApplication 内含的 @ComponentScan 会递归扫描所有子包（controller/、service/、mapper/ 等），自动发现所有组件。如果启动类放深了，外面的组件就扫不到。';
-  } else {
-    el.classList.add('incorrect');
-    feedback.className = 'quiz-feedback show incorrect';
-    feedback.textContent = '不对。启动类必须放在根包，这样 @ComponentScan 才能递归扫描到所有子包中的组件。放在子包里会导致其他子包中的类无法被 Spring 发现。';
-  }
-}
-</script>
 
 </body>
 </html>

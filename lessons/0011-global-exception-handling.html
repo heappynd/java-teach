@@ -196,40 +196,64 @@ public Map&lt;String, Object&gt; handleException(Exception e) {
   <p><code>@RestControllerAdvice</code> 和 <code>@ExceptionHandler</code> 都是 Spring MVC 3.2+ 的特性，JDK 8 / Spring Boot 2.x 完全支持。无兼容性问题。</p>
 </div>
 
-<div class="quiz">
-  <h3>小测验</h3>
-  <p class="quiz-question">@RestControllerAdvice 的作用是什么？</p>
-  <ul class="quiz-options">
-    <li class="quiz-option" onclick="checkAnswer(this, false)">标记类为 REST API 控制器</li>
-    <li class="quiz-option" onclick="checkAnswer(this, true)">全局捕获异常并返回 JSON</li>
-    <li class="quiz-option" onclick="checkAnswer(this, false)">配置 Spring Boot 自动装配</li>
-    <li class="quiz-option" onclick="checkAnswer(this, false)">管理数据库连接池配置</li>
-  </ul>
-  <div class="quiz-feedback" id="quiz-feedback"></div>
-</div>
+<div class="challenge">
+  <div class="challenge-header">
+    <span class="challenge-badge">实战</span>
+    <h3>动手挑战：自定义用户不存在异常</h3>
+  </div>
+  <p class="challenge-context">当前 Service 用 <code>IllegalArgumentException</code> 表示所有业务错误。但实际开发中，不同业务错误应该用不同的异常类型，方便分类处理。现在创建一个自定义异常。</p>
 
-<div class="quiz">
-  <h3>小测验</h3>
-  <p class="quiz-question">Service 抛出异常，没有全局异常处理时会怎样？</p>
-  <ul class="quiz-options">
-    <li class="quiz-option" onclick="checkAnswer2(this, false)">返回 404 Not Found 页面</li>
-    <li class="quiz-option" onclick="checkAnswer2(this, false)">正常返回空 JSON 响应</li>
-    <li class="quiz-option" onclick="checkAnswer2(this, true)">返回 500 HTML 错误页面</li>
-    <li class="quiz-option" onclick="checkAnswer2(this, false)">自动重试该次请求操作</li>
-  </ul>
-  <div class="quiz-feedback" id="quiz-feedback-2"></div>
-</div>
+  <div class="challenge-requirements">
+    <h4>需求</h4>
+    <ul>
+      <li>新建 <code>exception</code> 包（<code>com.yourname.demo.exception</code>）</li>
+      <li>创建 <code>UserNotFoundException</code> 类，继承 <code>RuntimeException</code></li>
+      <li>构造器接收 <code>Long id</code>，调用 <code>super("用户不存在: " + id)</code></li>
+      <li>在 <code>UserController</code> 的 <code>getById</code> 方法中，查出 null 时抛出此异常</li>
+      <li>在 <code>GlobalExceptionHandler</code> 中添加 <code>@ExceptionHandler(UserNotFoundException.class)</code>，返回 code 404</li>
+    </ul>
+  </div>
 
-<div class="quiz">
-  <h3>小测验</h3>
-  <p class="quiz-question">@ExceptionHandler(IllegalArgumentException.class) 的参数指定了什么？</p>
-  <ul class="quiz-options">
-    <li class="quiz-option" onclick="checkAnswer3(this, false)">要返回的 HTTP 状态码</li>
-    <li class="quiz-option" onclick="checkAnswer3(this, true)">要捕获的异常类型</li>
-    <li class="quiz-option" onclick="checkAnswer3(this, false)">要调用的 Service 方法</li>
-    <li class="quiz-option" onclick="checkAnswer3(this, false)">要记录的日志级别</li>
+  <div class="challenge-files">
+    <h4>需要创建/改动的文件</h4>
+    <ol>
+      <li><code>exception/UserNotFoundException.java</code> - 自定义异常类</li>
+      <li><code>controller/UserController.java</code> - getById 抛出异常</li>
+      <li><code>common/GlobalExceptionHandler.java</code> - 添加异常处理器</li>
+    </ol>
+  </div>
+
+  <h4>验收清单（我会逐项检查）</h4>
+  <ul class="challenge-checklist">
+    <li>UserNotFoundException 继承 <code>RuntimeException</code></li>
+    <li>构造器接收 <code>Long id</code>，调用 <code>super("用户不存在: " + id)</code></li>
+    <li>package 声明是 <code>com.yourname.demo.exception</code></li>
+    <li>Controller 的 getById 中查出 null 时抛出 <code>UserNotFoundException</code></li>
+    <li>GlobalExceptionHandler 有 <code>@ExceptionHandler(UserNotFoundException.class)</code></li>
+    <li>返回的 code 是 <code>404</code>（区别于 400 业务错误）</li>
+    <li>访问不存在用户 ID 返回 <code>{"code":404,"message":"用户不存在: 999"}</code></li>
+    <li>代码能编译通过</li>
   </ul>
-  <div class="quiz-feedback" id="quiz-feedback-3"></div>
+
+  <details class="challenge-hints">
+    <summary>卡住了？点开看提示（建议先自己想 5 分钟）</summary>
+    <details>
+      <summary>提示 1：自定义异常怎么写？</summary>
+      <p><code>public class UserNotFoundException extends RuntimeException { public UserNotFoundException(Long id) { super("用户不存在: " + id); } }</code>。继承 RuntimeException 是 Java 自定义业务异常的标准做法。</p>
+    </details>
+    <details>
+      <summary>提示 2：在哪里抛出？</summary>
+      <p>在 Controller 的 <code>getById</code> 方法中：<code>User user = userService.getById(id); if (user == null) throw new UserNotFoundException(id); return Result.success(user);</code></p>
+    </details>
+    <details>
+      <summary>提示 3：异常处理器怎么加？</summary>
+      <p>在 GlobalExceptionHandler 中加：<code>@ExceptionHandler(UserNotFoundException.class) public Result&lt;?&gt; handleNotFound(UserNotFoundException e) { return Result.error(404, e.getMessage()); }</code>。注意要 import 自定义异常类。</p>
+    </details>
+  </details>
+
+  <div class="challenge-submit">
+    <p><strong>完成后告诉我「评审」或「完成了」</strong>，我会读取你的代码，对照验收清单逐项点评，并给出改进建议。</p>
+  </div>
 </div>
 
 <div class="callout callout-tip">
@@ -249,53 +273,6 @@ public Map&lt;String, Object&gt; handleException(Exception e) {
 <div class="footer">
   <p>有任何不清楚的地方？直接问我！我是你的 Java 后端老师，随时帮你解决疑问。</p>
 </div>
-
-<script>
-function checkAnswer(el, isCorrect) {
-  var options = el.parentNode.querySelectorAll('.quiz-option');
-  var feedback = document.getElementById('quiz-feedback');
-  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
-  if (isCorrect) {
-    el.classList.add('correct');
-    feedback.className = 'quiz-feedback show correct';
-    feedback.textContent = '正确！@RestControllerAdvice 全局拦截所有 @RestController 抛出的异常，就像 Express 的错误中间件 app.use((err, req, res, next))，把异常转成 JSON 响应返回给前端。';
-  } else {
-    el.classList.add('incorrect');
-    feedback.className = 'quiz-feedback show incorrect';
-    feedback.textContent = '不对。@RestController 不需要这个注解，自动配置和连接池也无关。它的作用是全局异常处理，把 Controller 抛出的异常统一转成 JSON。';
-  }
-}
-
-function checkAnswer2(el, isCorrect) {
-  var options = el.parentNode.querySelectorAll('.quiz-option');
-  var feedback = document.getElementById('quiz-feedback-2');
-  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
-  if (isCorrect) {
-    el.classList.add('correct');
-    feedback.className = 'quiz-feedback show correct';
-    feedback.textContent = '正确！没有全局异常处理时，异常冒泡到 Spring MVC，默认返回 500 状态码和 Whitelabel Error Page（HTML）。前端 axios 拿到 HTML 而非 JSON，无法解析。';
-  } else {
-    el.classList.add('incorrect');
-    feedback.className = 'quiz-feedback show incorrect';
-    feedback.textContent = '不对。不是 404，也不是空 JSON，更不会自动重试。Spring Boot 默认返回 500 状态码和 HTML 格式的错误页面。';
-  }
-}
-
-function checkAnswer3(el, isCorrect) {
-  var options = el.parentNode.querySelectorAll('.quiz-option');
-  var feedback = document.getElementById('quiz-feedback-3');
-  options.forEach(function(opt) { opt.classList.remove('correct', 'incorrect'); });
-  if (isCorrect) {
-    el.classList.add('correct');
-    feedback.className = 'quiz-feedback show correct';
-    feedback.textContent = '正确！@ExceptionHandler 的参数指定要捕获的异常类型。写 IllegalArgumentException.class 就只拦这种异常，写 Exception.class 就兜底所有异常。越具体的类型优先匹配。';
-  } else {
-    el.classList.add('incorrect');
-    feedback.className = 'quiz-feedback show incorrect';
-    feedback.textContent = '不对。参数不是状态码、方法名或日志级别，它指定的是要捕获的异常类型（如 IllegalArgumentException.class）。';
-  }
-}
-</script>
 
 </body>
 </html>
