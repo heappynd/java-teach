@@ -361,7 +361,7 @@ INFO  --- Started DemoApplication in 2.134 seconds</span>
   <div class="challenge-requirements">
     <h4>需求</h4>
     <ul>
-      <li>找到 <code>demo/src/main/resources/application.yaml</code></li>
+      <li>找到 <code>demo/src/main/resources/application.properties</code></li>
       <li>添加配置：把服务器端口从默认的 8080 改成 <code>9090</code></li>
       <li>运行项目（IDE 运行或 <code>mvn spring-boot:run</code>）</li>
       <li>浏览器访问 <code>http://localhost:9090/users</code>，确认能正常返回数据</li>
@@ -377,7 +377,7 @@ INFO  --- Started DemoApplication in 2.134 seconds</span>
 
   <h4>验收清单（我会逐项检查）</h4>
   <ul class="challenge-checklist">
-    <li>配置文件中添加了 <code>server.port: 9090</code>（YAML 格式）</li>
+    <li>配置文件中添加了 <code>server.port=9090</code></li>
     <li>项目能正常启动，日志显示端口 9090</li>
     <li><code>http://localhost:9090/users</code> 能正常返回 JSON 数据</li>
     <li><code>http://localhost:8080/users</code> 无法访问（端口已改）</li>
@@ -386,8 +386,8 @@ INFO  --- Started DemoApplication in 2.134 seconds</span>
   <details class="challenge-hints">
     <summary>卡住了？点开看提示</summary>
     <details>
-      <summary>提示：YAML 格式怎么写？</summary>
-      <p>在 <code>application.yaml</code> 顶部添加：<br><code>server:<br>&nbsp;&nbsp;port: 9090</code><br>注意 YAML 用缩进表示层级，<code>port</code> 前面有两个空格。</p>
+      <summary>提示：properties 格式怎么写？</summary>
+      <p>在 <code>application.properties</code> 中添加一行：<code>server.port=9090</code>。等号连接，不需要缩进。</p>
     </details>
   </details>
 
